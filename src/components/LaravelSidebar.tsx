@@ -13,8 +13,8 @@ const GRUPOS = [
   {
     titulo: 'Módulo local',
     itens: [
-      { href: '/operations', label: 'Descargas de navio', icon: 'ship' as const, match: ['/operations', '/discharges'] },
-      { href: '/contentores', label: 'Contentores', icon: 'box' as const, match: ['/contentores'] },
+      // { href: '/operations', label: 'Descargas de navio', icon: 'ship' as const, match: ['/operations', '/discharges'] },
+      // { href: '/contentores', label: 'Contentores', icon: 'box' as const, match: ['/contentores'] },
     ],
   },
 ];
