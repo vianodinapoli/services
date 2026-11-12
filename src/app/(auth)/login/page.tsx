@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageLoader, Spinner } from '@/components/loaders';
 
 const input =
   'h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200';
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [erro, setErro] = useState('');
   const [busy, setBusy] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,6 +29,7 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        setRedirecting(true); // mantém busy ligado: o loader fica até a página mudar
         router.push('/operacoes');
         router.refresh();
         return;
@@ -36,9 +39,9 @@ export default function LoginPage() {
       setErro(data?.errors?.email?.[0] ?? data?.message ?? 'Não foi possível entrar.');
     } catch {
       setErro('Sem ligação ao servidor. Verifique a rede e tente novamente.');
-    } finally {
-      setBusy(false);
     }
+
+    setBusy(false); // só chega aqui se o login falhou
   }
 
   return (
@@ -68,18 +71,29 @@ export default function LoginPage() {
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Email</span>
-            <input name="email" type="email" required autoComplete="username" className={input} />
+            <input name="email" type="email" required autoComplete="username" disabled={busy} className={input} />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Palavra-passe</span>
-            <input name="password" type="password" required autoComplete="current-password" className={input} />
+            <input name="password" type="password" required autoComplete="current-password" disabled={busy} className={input} />
           </label>
 
-          <button disabled={busy} className="h-14 w-full rounded-xl bg-accent text-lg font-semibold text-white shadow-sm disabled:opacity-50">
-            {busy ? 'A entrar...' : 'Entrar'}
+          <button
+            disabled={busy}
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-accent text-lg font-semibold text-white shadow-sm disabled:opacity-70"
+          >
+            {busy ? (
+              <>
+                <Spinner /> A entrar...
+              </>
+            ) : (
+              'Entrar'
+            )}
           </button>
         </form>
       </section>
+
+      {redirecting && <PageLoader fullscreen text="A entrar" sub="A preparar o seu painel" />}
     </main>
   );
 }
