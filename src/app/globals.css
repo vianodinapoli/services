@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sb: #0e1015;
+  --color-sb-surface: #161a22;
+  --color-accent: #c60a1a;
+  --color-content: #f3f4f6;
+}
+
+@theme inline {
+  --font-sans: var(--font-dm), system-ui, sans-serif;
+  --font-display: var(--font-syne), system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-content);
+  color: #111827;
+}
+
+@keyframes toast-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes toast-bar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@media print {
+  aside, header, .no-print { display: none !important; }
+  body { background: #fff; }
+}
+
+@media print {
+  .ticket {
+    width: 80mm;
+    max-width: 80mm;
+    margin: 0 auto;
+    border: none;
+    box-shadow: none;
+    padding: 2mm;
+  }
+}
+
+@media print {
+  .ticket {
+    width: 80mm;
+    max-width: 80mm;
+    margin: 0 auto;
+    border: none;
+    box-shadow: none;
+    padding: 2mm;
+  }
+}
