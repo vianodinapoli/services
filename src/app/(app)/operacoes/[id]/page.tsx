@@ -3,16 +3,20 @@ import Link from 'next/link';
 import { laravel } from '@/lib/laravel';
 import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
+import AutoRefresh from '@/components/AutoRefresh';
 import { Icon } from '@/components/icons';
 import { fmt, STATUS_COLOR, STATUS_LABEL, type DischargeList, type Operation } from '@/lib/laravel-types';
 
 type SP = Record<string, string | undefined>;
 const CHAVES = ['q', 'st', 'tr', 'at', 'de', 'ate', 'pp'];
 
+// Telemóvel (<768px): tamanhos originais, camiões em cartões
+// Tablet e ecrã grande (≥768px): topo compacto e camiões em tabela de linhas finas
 const campo =
-  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200';
+  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200 md:h-10 xl:h-12';
 
-const rotuloCampo = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+const rotuloCampo =
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 md:mb-1 xl:mb-1.5';
 
 const cartao = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 
@@ -81,71 +85,79 @@ export default async function OperacaoPage({
         <FlashToast />
       </Suspense>
 
-      <div className="mx-auto max-w-6xl space-y-8 p-6 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-8 p-6 md:space-y-4 md:p-4 xl:space-y-8 xl:p-8">
         {/* Ação principal */}
         <Link
           href={`/operacoes/${op.id}/novo`}
-          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-accent text-lg font-semibold text-white shadow-md transition hover:opacity-95 active:opacity-90"
+          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-accent text-lg font-semibold text-white shadow-md transition hover:opacity-95 active:opacity-90 md:h-12 md:text-base xl:h-16 xl:text-lg"
         >
           <Icon name="plus" />
           Registar novo camião
         </Link>
 
         {/* Resumo */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className={`${cartao} p-6`}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-3 xl:gap-4">
+          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recebido</div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight text-slate-900">{fmt(op.recebido_ton, 1)} t</span>
+            <div className="mt-2 flex items-baseline gap-2 md:mt-0.5 xl:mt-2">
+              <span className="text-3xl font-bold tracking-tight text-slate-900 md:text-2xl xl:text-3xl">
+                {fmt(op.recebido_ton, 1)} t
+              </span>
               <span className="text-sm font-semibold text-sky-700">{pct}%</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 md:mt-1.5 xl:mt-3">
               <div className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2 text-xs text-slate-500">de {fmt(op.esperado_ton, 1)} t esperadas</div>
+            <div className="mt-2 text-xs text-slate-500 md:mt-1 xl:mt-2">de {fmt(op.esperado_ton, 1)} t esperadas</div>
           </div>
 
-          <div className={`${cartao} p-6`}>
+          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Camiões</div>
-            <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{op.camioes_count}</div>
-            <div className="mt-3 text-xs text-slate-500">registados nesta operação</div>
+            <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:mt-0.5 md:text-2xl xl:mt-2 xl:text-3xl">
+              {op.camioes_count}
+            </div>
+            <div className="mt-3 text-xs text-slate-500 md:mt-1 xl:mt-3">registados nesta operação</div>
           </div>
 
-          <div className={`${cartao} p-6`}>
+          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Por confirmar</div>
             <div
-              className={`mt-2 text-3xl font-bold tracking-tight ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
+              className={`mt-2 text-3xl font-bold tracking-tight md:mt-0.5 md:text-2xl xl:mt-2 xl:text-3xl ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
             >
               {op.pendentes_count}
             </div>
-            <div className="mt-3 text-xs text-slate-500">
+            <div className="mt-3 text-xs text-slate-500 md:mt-1 xl:mt-3">
               {op.pendentes_count > 0 ? 'a aguardar confirmação' : 'tudo confirmado'}
             </div>
           </div>
         </div>
 
         {/* Plano por produto */}
-        <section className="space-y-4">
+        <section className="space-y-4 md:space-y-2 xl:space-y-4">
           <h2 className={tituloSecao}>Plano por produto</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-2 xl:gap-4">
             {op.items.map((it) => {
               const p = it.plano > 0 ? Math.min(100, Math.round((it.registado / it.plano) * 100)) : 0;
               return (
-                <div key={it.id} className={`${cartao} p-5`}>
+                <div key={it.id} className={`${cartao} p-5 md:p-3 xl:p-5`}>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-base font-bold text-slate-900">{it.nome}</span>
+                    <span className="text-base font-bold text-slate-900 md:text-sm xl:text-base">{it.nome}</span>
                     <span className="shrink-0 rounded-full bg-sky-100 px-3 py-0.5 text-xs font-semibold text-sky-800">{p}%</span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600 md:mt-0 md:text-xs xl:mt-1 xl:text-sm">
                     {fmt(it.registado)} / {fmt(it.plano)} {it.unidade_label}
+                    <span className="hidden text-xs text-slate-500 md:inline xl:hidden">
+                      {' '}
+                      · saldo {fmt(it.saldo)} {it.unidade_label}
+                    </span>
                   </p>
-                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100 md:mt-1.5 md:h-2 xl:mt-3 xl:h-2.5">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]"
                       style={{ width: `${p}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-slate-500 md:hidden xl:block">
                     Saldo por lançar: {fmt(it.saldo)} {it.unidade_label}
                   </p>
                 </div>
@@ -155,8 +167,11 @@ export default async function OperacaoPage({
         </section>
 
         {/* Camiões */}
-        <section className="space-y-4">
-          <h2 className={tituloSecao}>Camiões lançados ({contagens.todos})</h2>
+        <section className="space-y-4 md:space-y-2 xl:space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-2">
+            <h2 className={tituloSecao}>Camiões lançados ({contagens.todos})</h2>
+            <AutoRefresh segundos={20} />
+          </div>
 
           {/* Abas */}
           <div className="flex flex-wrap gap-2">
@@ -166,7 +181,7 @@ export default async function OperacaoPage({
                 <Link
                   key={a.valor || 'todos'}
                   href={href({ st: a.valor || undefined, pagina: undefined })}
-                  className={`flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
+                  className={`flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition md:h-9 md:px-4 xl:h-11 xl:px-5 ${
                     ativa
                       ? 'border-accent bg-accent text-white shadow-sm'
                       : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
@@ -184,7 +199,7 @@ export default async function OperacaoPage({
           </div>
 
           {/* Pesquisa e filtros */}
-          <form method="get" action={base} className={`${cartao} space-y-3 p-5`}>
+          <form method="get" action={base} className={`${cartao} space-y-3 p-5 md:space-y-1 md:p-3 xl:space-y-3 xl:p-5`}>
             {sp.st && <input type="hidden" name="st" value={sp.st} />}
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
@@ -193,19 +208,19 @@ export default async function OperacaoPage({
                 placeholder="Pesquisar matrícula, motorista, guia ou transportadora"
                 className={campo}
               />
-              <button className="h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white hover:bg-slate-800 active:opacity-90">
+              <button className="h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white hover:bg-slate-800 active:opacity-90 md:h-10 xl:h-12">
                 Pesquisar
               </button>
             </div>
 
             <details open={filtrosAvancados} className="group">
-              <summary className="flex h-11 cursor-pointer list-none items-center text-sm font-semibold text-slate-700">
+              <summary className="flex h-11 cursor-pointer list-none items-center text-sm font-semibold text-slate-700 md:h-9 xl:h-11">
                 Mais filtros
                 <span className="ml-2 text-xs font-normal text-slate-500 group-open:hidden">
                   (transportadora, atrelado, datas)
                 </span>
               </summary>
-              <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-3">
+              <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-3 xl:gap-4">
                 <label className="block">
                   <span className={rotuloCampo}>Transportadora</span>
                   <select name="tr" defaultValue={sp.tr ?? ''} className={campo}>
@@ -243,7 +258,7 @@ export default async function OperacaoPage({
                   <input type="date" name="ate" defaultValue={sp.ate} className={campo} />
                 </label>
                 <div className="flex items-end">
-                  <button className="h-12 w-full rounded-xl border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-50 active:bg-slate-100">
+                  <button className="h-12 w-full rounded-xl border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-50 active:bg-slate-100 md:h-10 xl:h-12">
                     Aplicar filtros
                   </button>
                 </div>
@@ -251,13 +266,13 @@ export default async function OperacaoPage({
             </details>
 
             {filtrado && (
-              <Link href={base} className="inline-flex h-10 items-center text-sm font-semibold text-accent underline">
+              <Link href={base} className="inline-flex h-10 items-center text-sm font-semibold text-accent underline md:h-8 xl:h-10">
                 Limpar todos os filtros
               </Link>
             )}
           </form>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 md:text-xs xl:text-sm">
             {meta.total === 0
               ? filtrado
                 ? 'Nenhum camião corresponde aos filtros.'
@@ -265,14 +280,13 @@ export default async function OperacaoPage({
               : `A mostrar ${meta.de}-${meta.ate} de ${meta.total}${filtrado ? ' (filtrado)' : ''}`}
           </p>
 
-          {/* Lista de camiões */}
-          <ul className="space-y-3">
+          {/* Camiões no telemóvel: cartões */}
+          <ul className="space-y-3 md:hidden">
             {lista.data.map((d) => (
               <li
                 key={d.id}
-                className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md md:flex-row md:items-center md:gap-8 md:px-8 md:py-6"
+                className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                {/* Identificação */}
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 sm:flex">
                     <svg
@@ -306,10 +320,7 @@ export default async function OperacaoPage({
                   </div>
                 </div>
 
-                <div className="hidden h-16 w-px bg-slate-200 md:block" />
-
-                {/* Dados da guia */}
-                <dl className="flex flex-wrap gap-x-10 gap-y-3 md:flex-1">
+                <dl className="flex flex-wrap gap-x-10 gap-y-3">
                   <div>
                     <dt className="text-xs font-medium text-slate-500">Guia</dt>
                     <dd className="mt-1 text-[15px] font-semibold text-slate-900">{d.numero_guia}</dd>
@@ -329,9 +340,6 @@ export default async function OperacaoPage({
                   )}
                 </dl>
 
-                <div className="hidden h-16 w-px bg-slate-200 md:block" />
-
-                {/* Quantidades */}
                 <div className="flex gap-9">
                   <div>
                     <div className="text-2xl font-bold tracking-tight text-slate-900">{d.total_sacos}</div>
@@ -345,18 +353,82 @@ export default async function OperacaoPage({
                   </div>
                 </div>
 
-                {/* Ação */}
                 <Link
                   href={`/operacoes/${op.id}/camioes/${d.id}`}
                   aria-label={`Ver ticket do camião ${d.matricula}`}
                   title="Ver ticket"
-                  className="flex h-14 w-14 shrink-0 items-center justify-center self-end rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100 md:self-auto"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center self-end rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
                 >
                   <Icon name="eye" className="h-6 w-6" />
                 </Link>
               </li>
             ))}
           </ul>
+
+          {/* Camiões no tablet e ecrã grande: tabela completa */}
+          <div className={`${cartao} hidden overflow-x-auto md:block`}>
+            <table className="w-full text-left text-xs xl:text-sm">
+              <thead>
+                <tr className="h-7 border-b border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500">
+                  <th className="px-3 font-medium xl:px-4">Matrícula</th>
+                  <th className="px-3 font-medium xl:px-4">Motorista · transportadora</th>
+                  <th className="px-3 font-medium xl:px-4">Guia</th>
+                  <th className="px-3 font-medium xl:px-4">Data e hora</th>
+                  <th className="px-3 font-medium xl:px-4">Atrelado</th>
+                  <th className="px-3 text-right font-medium xl:px-4">Sacos</th>
+                  <th className="px-3 text-right font-medium xl:px-4">Estimado</th>
+                  <th className="w-10 px-3 xl:px-4">
+                    <span className="sr-only">Ver ticket</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {lista.data.map((d) => (
+                  <tr key={d.id} className="h-10 hover:bg-slate-50">
+                    <td className="whitespace-nowrap px-3 xl:px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{d.matricula}</span>
+                        <span
+                          className={`rounded-full px-2 text-[10px] font-semibold leading-5 ${STATUS_COLOR[d.status]}`}
+                        >
+                          {STATUS_LABEL[d.status]}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 text-slate-600 xl:px-4">
+                      <div className="max-w-[160px] truncate lg:max-w-[240px] xl:max-w-[320px]">
+                        {d.motorista} · {d.transportadora}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-3 font-semibold text-slate-900 xl:px-4">{d.numero_guia}</td>
+                    <td className="whitespace-nowrap px-3 text-slate-700 xl:px-4">
+                      {d.data}
+                      {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
+                    </td>
+                    <td className="whitespace-nowrap px-3 capitalize text-slate-700 xl:px-4">
+                      {d.tipo_atrelado ?? '—'}
+                    </td>
+                    <td className="whitespace-nowrap px-3 text-right font-semibold text-slate-900 xl:px-4">
+                      {d.total_sacos}
+                    </td>
+                    <td className="whitespace-nowrap px-3 text-right font-semibold text-slate-900 xl:px-4">
+                      {fmt(d.peso_total_estimado / 1000)} t
+                    </td>
+                    <td className="px-3 text-right xl:px-4">
+                      <Link
+                        href={`/operacoes/${op.id}/camioes/${d.id}`}
+                        aria-label={`Ver ticket do camião ${d.matricula}`}
+                        title="Ver ticket"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                      >
+                        <Icon name="eye" className="h-4 w-4" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Paginação */}
           {meta.ultima > 1 && (
