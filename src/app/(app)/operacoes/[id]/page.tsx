@@ -3,20 +3,16 @@ import Link from 'next/link';
 import { laravel } from '@/lib/laravel';
 import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
-import AutoRefresh from '@/components/AutoRefresh';
 import { Icon } from '@/components/icons';
 import { fmt, STATUS_COLOR, STATUS_LABEL, type DischargeList, type Operation } from '@/lib/laravel-types';
 
 type SP = Record<string, string | undefined>;
 const CHAVES = ['q', 'st', 'tr', 'at', 'de', 'ate', 'pp'];
 
-// Telemóvel (<768px): tamanhos originais, camiões em cartões
-// Tablet e ecrã grande (≥768px): topo compacto e camiões em tabela de linhas finas
 const campo =
-  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200 md:h-10 xl:h-12';
+  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200';
 
-const rotuloCampo =
-  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 md:mb-1 xl:mb-1.5';
+const rotuloCampo = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 const cartao = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 
@@ -49,12 +45,13 @@ function IconeCamiao({ tipo, tamanho = 20 }: { tipo?: string | null; tamanho?: n
           <path d="M12 18V6a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
           <path d="M8 18h4" />
           <path d="M12 12h3" />
-          <path d="M27 18V6a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+          <path d="M15 18h7" />
           <path d="M22 18h5" />
           <path d="M27 18h1" />
-          <path d="M32 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 30.52 8H27" />
+          <path d="M32 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 30.52 8H28" />
+          <path d="M28 8v10" />
           <circle cx="6" cy="18" r="2" />
-          <circle cx="20" cy="18" r="2" />
+          <circle cx="18" cy="18" r="2" />
           <circle cx="30" cy="18" r="2" />
         </>
       ) : (
@@ -95,9 +92,9 @@ export default async function OperacaoPage({
 
   const api = new URLSearchParams();
   CHAVES.forEach((k) => {
-    if (sp[k]) api.set(k, sp[k]!);
+    if (sp[k]) api.set(k, sp[k] as string);
   });
-  api.set('page', String(pagina));
+  api.set('pagina', String(pagina));
 
   const [op, lista] = await Promise.all([
     laravel<Operation>(`/operations/${id}`),
@@ -119,12 +116,16 @@ export default async function OperacaoPage({
   const filtrosAvancados = !!(sp.tr || sp.at || sp.de || sp.ate);
   const filtrado = !!(sp.q || sp.st || filtrosAvancados);
 
-  const abas: { valor: string; rotulo: string; n: number }[] = [
+  const abas = [
     { valor: '', rotulo: 'Todos', n: contagens.todos },
-    { valor: 'por_confirmar', rotulo: 'Por confirmar', n: contagens.por_confirmar },
+    { valor: 'in_transit', rotulo: 'Em trânsito', n: contagens.in_transit },
     { valor: 'weighing', rotulo: 'A pesar', n: contagens.weighing },
     { valor: 'confirmed', rotulo: 'Confirmados', n: contagens.confirmed },
   ];
+
+  const por = (meta as any).por_pagina ?? lista.data.length;
+  const de = (meta.pagina - 1) * por + 1;
+  const ate = (meta.pagina - 1) * por + lista.data.length;
 
   return (
     <>
@@ -133,79 +134,63 @@ export default async function OperacaoPage({
         <FlashToast />
       </Suspense>
 
-      <div className="mx-auto max-w-6xl space-y-8 p-6 md:space-y-4 md:p-4 xl:space-y-8 xl:p-8">
-        {/* Ação principal */}
+      <div className="space-y-8 px-4 md:px-6 xl:px-8">
         <Link
-          href={`/operacoes/${op.id}/novo`}
-          className="flex h-16 items-center justify-center gap-3 rounded-2xl bg-accent text-lg font-semibold text-white shadow-md transition hover:opacity-95 active:opacity-90 md:h-12 md:text-base xl:h-16 xl:text-lg"
+          href={`${base}/camioes/novo`}
+          className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-base font-semibold text-white shadow-sm hover:opacity-95 active:opacity-90"
         >
           <Icon name="plus" />
           Registar novo camião
         </Link>
 
         {/* Resumo */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-3 xl:gap-4">
-          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className={`${cartao} p-6`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recebido</div>
-            <div className="mt-2 flex items-baseline gap-2 md:mt-0.5 xl:mt-2">
-              <span className="text-3xl font-bold tracking-tight text-slate-900 md:text-2xl xl:text-3xl">
-                {fmt(op.recebido_ton, 1)} t
-              </span>
-              <span className="text-sm font-semibold text-sky-700">{pct}%</span>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold tracking-tight text-slate-900">{fmt(op.recebido_ton, 1)} t</span>
+              <span className="text-sm font-semibold text-slate-500">{pct}%</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 md:mt-1.5 xl:mt-3">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2 text-xs text-slate-500 md:mt-1 xl:mt-2">de {fmt(op.esperado_ton, 1)} t esperadas</div>
+            <div className="mt-2 text-xs text-slate-500">de {fmt(op.esperado_ton, 1)} t esperadas</div>
           </div>
 
-          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Camiões</div>
-            <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:mt-0.5 md:text-2xl xl:mt-2 xl:text-3xl">
-              {op.camioes_count}
-            </div>
-            <div className="mt-3 text-xs text-slate-500 md:mt-1 xl:mt-3">registados nesta operação</div>
-          </div>
-
-          <div className={`${cartao} p-6 md:p-3 xl:p-6`}>
+          <div className={`${cartao} p-6`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Por confirmar</div>
             <div
-              className={`mt-2 text-3xl font-bold tracking-tight md:mt-0.5 md:text-2xl xl:mt-2 xl:text-3xl ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
+              className={`mt-2 text-3xl font-bold tracking-tight ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
             >
               {op.pendentes_count}
             </div>
-            <div className="mt-3 text-xs text-slate-500 md:mt-1 xl:mt-3">
+            <div className="mt-3 text-xs text-slate-500">
               {op.pendentes_count > 0 ? 'a aguardar confirmação' : 'tudo confirmado'}
             </div>
           </div>
         </div>
 
         {/* Plano por produto */}
-        <section className="space-y-4 md:space-y-2 xl:space-y-4">
+        <section className="space-y-4">
           <h2 className={tituloSecao}>Plano por produto</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-2 xl:gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {op.items.map((it) => {
               const p = it.plano > 0 ? Math.min(100, Math.round((it.registado / it.plano) * 100)) : 0;
               return (
-                <div key={it.id} className={`${cartao} p-5 md:p-3 xl:p-5`}>
+                <div key={it.id} className={`${cartao} p-5`}>
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-base font-bold text-slate-900 md:text-sm xl:text-base">{it.nome}</span>
-                    <span className="shrink-0 rounded-full bg-sky-100 px-3 py-0.5 text-xs font-semibold text-sky-800">{p}%</span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-600 md:mt-0 md:text-xs xl:mt-1 xl:text-sm">
-                    {fmt(it.registado)} / {fmt(it.plano)} {it.unidade_label}
-                    <span className="hidden text-xs text-slate-500 md:inline xl:hidden">
-                      {' '}
-                      · saldo {fmt(it.saldo)} {it.unidade_label}
+                    <span className="text-base font-bold text-slate-900">{it.nome}</span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      {fmt(it.registado)} / {fmt(it.plano)} {it.unidade_label}
                     </span>
-                  </p>
-                  <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-100 md:mt-1.5 md:h-2 xl:mt-3 xl:h-2.5">
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]"
                       style={{ width: `${p}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-slate-500 md:hidden xl:block">
+                  <p className="mt-2 text-xs text-slate-500">
                     Saldo por lançar: {fmt(it.saldo)} {it.unidade_label}
                   </p>
                 </div>
@@ -215,13 +200,9 @@ export default async function OperacaoPage({
         </section>
 
         {/* Camiões */}
-        <section className="space-y-4 md:space-y-2 xl:space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-2">
-            <h2 className={tituloSecao}>Camiões lançados ({contagens.todos})</h2>
-            <AutoRefresh segundos={20} />
-          </div>
+        <section className="space-y-4">
+          <h2 className={tituloSecao}>Camiões</h2>
 
-          {/* Abas */}
           <div className="flex flex-wrap gap-2">
             {abas.map((a) => {
               const ativa = (sp.st ?? '') === a.valor;
@@ -229,53 +210,49 @@ export default async function OperacaoPage({
                 <Link
                   key={a.valor || 'todos'}
                   href={href({ st: a.valor || undefined, pagina: undefined })}
-                  className={`flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition md:h-9 md:px-4 xl:h-11 xl:px-5 ${
+                  className={`flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
                     ativa
-                      ? 'border-accent bg-accent text-white shadow-sm'
-                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   {a.rotulo}
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${ativa ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'}`}
-                  >
-                    {a.n}
-                  </span>
+                  <span className={`text-xs ${ativa ? 'text-white/80' : 'text-slate-500'}`}>{a.n}</span>
                 </Link>
               );
             })}
           </div>
 
-          {/* Pesquisa e filtros */}
-          <form method="get" action={base} className={`${cartao} space-y-3 p-5 md:space-y-1 md:p-3 xl:space-y-3 xl:p-5`}>
+          <form method="get" action={base} className="space-y-4">
             {sp.st && <input type="hidden" name="st" value={sp.st} />}
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex gap-3">
               <input
+                type="search"
                 name="q"
                 defaultValue={sp.q}
-                placeholder="Pesquisar matrícula, motorista, guia ou transportadora"
+                placeholder="Pesquisar matrícula, motorista ou guia"
                 className={campo}
               />
-              <button className="h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white hover:bg-slate-800 active:opacity-90 md:h-10 xl:h-12">
+              <button className="h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white hover:bg-slate-800 active:opacity-90">
                 Pesquisar
               </button>
             </div>
 
-            <details open={filtrosAvancados} className="group">
-              <summary className="flex h-11 cursor-pointer list-none items-center text-sm font-semibold text-slate-700 md:h-9 xl:h-11">
+            <details className="group rounded-xl border border-slate-200 bg-white p-4" open={filtrosAvancados}>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-700">
                 Mais filtros
                 <span className="ml-2 text-xs font-normal text-slate-500 group-open:hidden">
                   (transportadora, atrelado, datas)
                 </span>
               </summary>
-              <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-3 xl:gap-4">
+              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                 <label className="block">
                   <span className={rotuloCampo}>Transportadora</span>
                   <select name="tr" defaultValue={sp.tr ?? ''} className={campo}>
                     <option value="">Todas</option>
                     {lista.transportadoras.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                      <option key={String(t)} value={String(t)}>
+                        {String(t)}
                       </option>
                     ))}
                   </select>
@@ -286,15 +263,6 @@ export default async function OperacaoPage({
                     <option value="">Todos</option>
                     <option value="normal">Normal</option>
                     <option value="link">Link</option>
-                    <option value="nd">Não definido</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className={rotuloCampo}>Por página</span>
-                  <select name="pp" defaultValue={sp.pp ?? '15'} className={campo}>
-                    <option value="15">15</option>
-                    <option value="30">30</option>
-                    <option value="50">50</option>
                   </select>
                 </label>
                 <label className="block">
@@ -305,42 +273,49 @@ export default async function OperacaoPage({
                   <span className={rotuloCampo}>Até</span>
                   <input type="date" name="ate" defaultValue={sp.ate} className={campo} />
                 </label>
-                <div className="flex items-end">
-                  <button className="h-12 w-full rounded-xl border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-50 active:bg-slate-100 md:h-10 xl:h-12">
-                    Aplicar filtros
-                  </button>
-                </div>
               </div>
             </details>
 
             {filtrado && (
-              <Link href={base} className="inline-flex h-10 items-center text-sm font-semibold text-accent underline md:h-8 xl:h-10">
+              <Link href={base} className="inline-flex h-10 items-center text-sm font-semibold text-accent underline">
                 Limpar todos os filtros
               </Link>
             )}
           </form>
 
-          <p className="text-sm text-slate-600 md:text-xs xl:text-sm">
+          <p className="text-sm text-slate-600">
             {meta.total === 0
               ? filtrado
                 ? 'Nenhum camião corresponde aos filtros.'
                 : 'Ainda não há camiões registados.'
-              : `A mostrar ${meta.de}-${meta.ate} de ${meta.total}${filtrado ? ' (filtrado)' : ''}`}
+              : `A mostrar ${de}–${ate} de ${meta.total}`}
           </p>
 
-          {/* Camiões no telemóvel: cartões */}
+          {/* Legenda dos ícones */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600">
+            <span className="flex items-center gap-2">
+              <IconeCamiao tipo="normal" tamanho={18} />
+              Atrelado normal
+            </span>
+            <span className="flex items-center gap-2">
+              <IconeCamiao tipo="link" tamanho={18} />
+              Atrelado link
+            </span>
+          </div>
+
+          {/* Telemóvel: cartões */}
           <ul className="space-y-3 md:hidden">
             {lista.data.map((d) => (
               <li
                 key={d.id}
-                className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                <div className="flex min-w-0 flex-1 items-center gap-4">
-                  <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 sm:flex">
-                    <IconeCamiao tipo={d.tipo_atrelado} tamanho={30} />
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100">
+                    <IconeCamiao tipo={d.tipo_atrelado} tamanho={28} />
                   </div>
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xl font-bold tracking-tight text-slate-900">{d.matricula}</span>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
                         {STATUS_LABEL[d.status]}
@@ -352,7 +327,7 @@ export default async function OperacaoPage({
                   </div>
                 </div>
 
-                <dl className="flex flex-wrap gap-x-10 gap-y-3">
+                <dl className="grid grid-cols-2 gap-3">
                   <div>
                     <dt className="text-xs font-medium text-slate-500">Guia</dt>
                     <dd className="mt-1 text-[15px] font-semibold text-slate-900">{d.numero_guia}</dd>
@@ -364,99 +339,100 @@ export default async function OperacaoPage({
                       {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
                     </dd>
                   </div>
-                  {d.tipo_atrelado && (
-                    <div>
-                      <dt className="text-xs font-medium text-slate-500">Atrelado</dt>
-                      <dd className="mt-1 text-[15px] font-semibold capitalize text-slate-900">{d.tipo_atrelado}</dd>
-                    </div>
-                  )}
+                  <div>
+                    <dt className="text-xs font-medium text-slate-500">Atrelado</dt>
+                    <dd className="mt-1 text-[15px] font-semibold capitalize text-slate-900">
+                      {d.tipo_atrelado ?? '—'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-slate-500">Sacos</dt>
+                    <dd className="mt-1 text-[15px] font-semibold text-slate-900">{d.total_sacos}</dd>
+                  </div>
                 </dl>
 
-                <div className="flex gap-9">
-                  <div>
-                    <div className="text-2xl font-bold tracking-tight text-slate-900">{d.total_sacos}</div>
-                    <div className="mt-1 text-xs font-medium text-slate-500">sacos</div>
-                  </div>
+                <div className="flex items-end justify-between">
                   <div>
                     <div className="text-2xl font-bold tracking-tight text-slate-900">
-                      {fmt(d.peso_total_estimado / 1000)} t
+                      {fmt(d.peso_total_estimado, 1)} t
                     </div>
-                    <div className="mt-1 text-xs font-medium text-slate-500">estimado</div>
+                    <div className="text-xs font-medium text-slate-500">estimado</div>
                   </div>
+                  <Link
+                    href={`/operacoes/${op.id}/camioes/${d.id}`}
+                    aria-label={`Ver ticket do camião ${d.matricula}`}
+                    title="Ver ticket"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    <Icon name="eye" className="h-6 w-6" />
+                  </Link>
                 </div>
-
-                <Link
-                  href={`/operacoes/${op.id}/camioes/${d.id}`}
-                  aria-label={`Ver ticket do camião ${d.matricula}`}
-                  title="Ver ticket"
-                  className="flex h-14 w-14 shrink-0 items-center justify-center self-end rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                >
-                  <Icon name="eye" className="h-6 w-6" />
-                </Link>
               </li>
             ))}
           </ul>
 
-          {/* Camiões no tablet e ecrã grande: tabela completa */}
-          <div className={`${cartao} hidden overflow-x-auto md:block`}>
-            <table className="w-full text-left text-xs xl:text-sm">
-              <thead>
-                <tr className="h-7 border-b border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-500">
-                  <th className="px-3 font-medium xl:px-4">Matrícula</th>
-                  <th className="px-3 font-medium xl:px-4">Motorista · transportadora</th>
-                  <th className="px-3 font-medium xl:px-4">Guia</th>
-                  <th className="px-3 font-medium xl:px-4">Data e hora</th>
-                  <th className="px-3 font-medium xl:px-4">Atrelado</th>
-                  <th className="px-3 text-right font-medium xl:px-4">Sacos</th>
-                  <th className="px-3 text-right font-medium xl:px-4">Estimado</th>
-                  <th className="w-10 px-3 xl:px-4">
-                    <span className="sr-only">Ver ticket</span>
+          {/* Tablet e ecrã grande: tabela (cabe sempre no cartão, sem rolar) */}
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+            <table className="w-full table-fixed text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                <tr className="h-10">
+                  <th className="w-[30%] px-3 xl:w-[24%] xl:px-4">Matrícula</th>
+                  <th className="w-[26%] px-3 xl:w-[22%] xl:px-4">Motorista · transportadora</th>
+                  <th className="w-[14%] px-3 xl:w-[11%] xl:px-4">Guia</th>
+                  <th className="hidden w-[15%] px-3 lg:table-cell xl:px-4">Data e hora</th>
+                  <th className="hidden w-[8%] px-3 xl:table-cell xl:px-4">Atrelado</th>
+                  <th className="w-[9%] px-3 text-right xl:w-[7%] xl:px-4">Sacos</th>
+                  <th className="w-[11%] px-3 text-right xl:w-[9%] xl:px-4">Estimado</th>
+                  <th className="w-20 px-3 text-center xl:px-4">
+                    <span className="sr-only">Ver</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lista.data.map((d) => (
-                  <tr key={d.id} className="h-10 hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-3 xl:px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="flex w-9 shrink-0 justify-center">
+                  <tr key={d.id} className="h-16 hover:bg-slate-50">
+                    <td className="px-3 xl:px-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex w-10 shrink-0 justify-center">
                           <IconeCamiao tipo={d.tipo_atrelado} />
                         </span>
-                        <span className="font-bold text-slate-900">{d.matricula}</span>
-                        <span
-                          className={`rounded-full px-2 text-[10px] font-semibold leading-5 ${STATUS_COLOR[d.status]}`}
-                        >
-                          {STATUS_LABEL[d.status]}
-                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate font-bold text-slate-900">{d.matricula}</div>
+                          <span
+                            className={`mt-0.5 inline-block rounded-full px-2 text-[10px] font-semibold leading-5 ${STATUS_COLOR[d.status]}`}
+                          >
+                            {STATUS_LABEL[d.status]}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-3 text-slate-600 xl:px-4">
-                      <div className="max-w-[160px] truncate lg:max-w-[240px] xl:max-w-[320px]">
+                      <div className="truncate" title={`${d.motorista} · ${d.transportadora}`}>
                         {d.motorista} · {d.transportadora}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-3 font-semibold text-slate-900 xl:px-4">{d.numero_guia}</td>
-                    <td className="whitespace-nowrap px-3 text-slate-700 xl:px-4">
+                    <td className="px-3 font-semibold text-slate-900 xl:px-4">
+                      <div className="truncate">{d.numero_guia}</div>
+                    </td>
+                    <td className="hidden whitespace-nowrap px-3 text-slate-600 lg:table-cell xl:px-4">
                       {d.data}
                       {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
                     </td>
-                    <td className="whitespace-nowrap px-3 capitalize text-slate-700 xl:px-4">
+                    <td className="hidden px-3 capitalize text-slate-700 xl:table-cell xl:px-4">
                       {d.tipo_atrelado ?? '—'}
                     </td>
+                    <td className="px-3 text-right font-semibold text-slate-900 xl:px-4">{d.total_sacos}</td>
                     <td className="whitespace-nowrap px-3 text-right font-semibold text-slate-900 xl:px-4">
-                      {d.total_sacos}
+                      {fmt(d.peso_total_estimado, 1)} t
                     </td>
-                    <td className="whitespace-nowrap px-3 text-right font-semibold text-slate-900 xl:px-4">
-                      {fmt(d.peso_total_estimado / 1000)} t
-                    </td>
-                    <td className="px-3 text-right xl:px-4">
+                    <td className="px-3 text-center xl:px-4">
                       <Link
                         href={`/operacoes/${op.id}/camioes/${d.id}`}
                         aria-label={`Ver ticket do camião ${d.matricula}`}
                         title="Ver ticket"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 active:bg-slate-200"
+                        className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
                       >
-                        <Icon name="eye" className="h-4 w-4" />
+                        <Icon name="eye" className="h-5 w-5" />
                       </Link>
                     </td>
                   </tr>
