@@ -22,6 +22,54 @@ const cartao = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 
 const tituloSecao = 'font-display text-sm font-bold uppercase tracking-wider text-slate-500';
 
+/** Camião com um reboque (atrelado normal) ou com dois reboques (atrelado link). */
+function IconeCamiao({ tipo, tamanho = 20 }: { tipo?: string | null; tamanho?: number }) {
+  const link = tipo === 'link';
+  const cor = link ? 'text-red-600' : tipo === 'normal' ? 'text-blue-700' : 'text-slate-400';
+  const texto = link ? 'Atrelado link' : tipo === 'normal' ? 'Atrelado normal' : 'Atrelado não definido';
+  const largura = link ? Math.round((tamanho * 38) / 24) : tamanho;
+
+  return (
+    <svg
+      role="img"
+      aria-label={texto}
+      width={largura}
+      height={tamanho}
+      viewBox={link ? '0 0 38 24' : '0 0 24 24'}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`shrink-0 ${cor}`}
+    >
+      <title>{texto}</title>
+      {link ? (
+        <>
+          <path d="M12 18V6a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+          <path d="M8 18h4" />
+          <path d="M12 12h3" />
+          <path d="M27 18V6a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+          <path d="M22 18h5" />
+          <path d="M27 18h1" />
+          <path d="M32 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 30.52 8H27" />
+          <circle cx="6" cy="18" r="2" />
+          <circle cx="20" cy="18" r="2" />
+          <circle cx="30" cy="18" r="2" />
+        </>
+      ) : (
+        <>
+          <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+          <path d="M15 18H9" />
+          <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+          <circle cx="17" cy="18" r="2" />
+          <circle cx="7" cy="18" r="2" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function paginas(atual: number, ultima: number): (number | '...')[] {
   const out: (number | '...')[] = [];
   const ini = Math.max(1, atual - 1);
@@ -288,24 +336,8 @@ export default async function OperacaoPage({
                 className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
-                  <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 sm:flex">
-                    <svg
-                      aria-hidden="true"
-                      width="30"
-                      height="30"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                      <path d="M15 18H9" />
-                      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                      <circle cx="17" cy="18" r="2" />
-                      <circle cx="7" cy="18" r="2" />
-                    </svg>
+                  <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 sm:flex">
+                    <IconeCamiao tipo={d.tipo_atrelado} tamanho={30} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
@@ -387,6 +419,9 @@ export default async function OperacaoPage({
                   <tr key={d.id} className="h-10 hover:bg-slate-50">
                     <td className="whitespace-nowrap px-3 xl:px-4">
                       <div className="flex items-center gap-2">
+                        <span className="flex w-9 shrink-0 justify-center">
+                          <IconeCamiao tipo={d.tipo_atrelado} />
+                        </span>
                         <span className="font-bold text-slate-900">{d.matricula}</span>
                         <span
                           className={`rounded-full px-2 text-[10px] font-semibold leading-5 ${STATUS_COLOR[d.status]}`}
