@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { laravel } from '@/lib/laravel';
 import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
+import DetalheCamiao from '@/components/DetalheCamiao';
 import { Icon } from '@/components/icons';
 import { fmt, STATUS_COLOR, STATUS_LABEL, type DischargeList, type Operation } from '@/lib/laravel-types';
 
@@ -118,7 +119,7 @@ export default async function OperacaoPage({
 
   const abas = [
     { valor: '', rotulo: 'Todos', n: contagens.todos },
-    { valor: 'in_transit', rotulo: 'Em trânsito', n: contagens.in_transit },
+    { valor: 'in_transit', rotulo: 'Em trânsito', n: contagens.por_confirmar },
     { valor: 'weighing', rotulo: 'A pesar', n: contagens.weighing },
     { valor: 'confirmed', rotulo: 'Confirmados', n: contagens.confirmed },
   ];
@@ -136,7 +137,7 @@ export default async function OperacaoPage({
 
       <div className="space-y-8 px-4 md:px-6 xl:px-8">
         <Link
-          href={`${base}/camioes/novo`}
+          href={`${base}/novo`}
           className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-base font-semibold text-white shadow-sm hover:opacity-95 active:opacity-90"
         >
           <Icon name="plus" />
@@ -358,14 +359,11 @@ export default async function OperacaoPage({
                     </div>
                     <div className="text-xs font-medium text-slate-500">estimado</div>
                   </div>
-                  <Link
+                  <DetalheCamiao
+                    camiao={d}
                     href={`/operacoes/${op.id}/camioes/${d.id}`}
-                    aria-label={`Ver ticket do camião ${d.matricula}`}
-                    title="Ver ticket"
                     className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                  >
-                    <Icon name="eye" className="h-6 w-6" />
-                  </Link>
+                  />
                 </div>
               </li>
             ))}
@@ -426,14 +424,11 @@ export default async function OperacaoPage({
                       {fmt(d.peso_total_estimado, 1)} t
                     </td>
                     <td className="px-3 text-center xl:px-4">
-                      <Link
+                      <DetalheCamiao
+                        camiao={d}
                         href={`/operacoes/${op.id}/camioes/${d.id}`}
-                        aria-label={`Ver ticket do camião ${d.matricula}`}
-                        title="Ver ticket"
                         className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
-                      >
-                        <Icon name="eye" className="h-5 w-5" />
-                      </Link>
+                      />
                     </td>
                   </tr>
                 ))}
