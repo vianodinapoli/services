@@ -5,19 +5,36 @@ import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
 import DetalheCamiao from '@/components/DetalheCamiao';
 import { Icon } from '@/components/icons';
-import { fmt, STATUS_COLOR, STATUS_LABEL, type DischargeList, type Operation } from '@/lib/laravel-types';
+import {
+  fmt,
+  STATUS_COLOR,
+  STATUS_LABEL,
+  type DischargeList,
+  type Operation,
+  type RelatorioConfirmados,
+} from '@/lib/laravel-types';
 
 type SP = Record<string, string | undefined>;
+// rd e rf (relatório) ficam de fora de propósito: não devem ir para a lista.
 const CHAVES = ['q', 'st', 'tr', 'at', 'de', 'ate', 'pp'];
 
 const campo =
-  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200';
+  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200 md:h-14';
 
-const rotuloCampo = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+const rotuloCampo = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm';
 
 const cartao = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 
-const tituloSecao = 'font-display text-sm font-bold uppercase tracking-wider text-slate-500';
+const tituloSecao = 'font-display text-sm font-bold uppercase tracking-wider text-slate-500 md:text-base';
+
+const botaoEscuro =
+  'h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-base font-semibold text-white hover:bg-slate-800 active:opacity-90 md:h-14 md:px-8';
+
+const botaoPagina =
+  'flex h-12 items-center rounded-xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 md:h-14 md:px-7';
+
+const botaoPaginaOff =
+  'flex h-12 items-center rounded-xl border border-slate-200 px-5 text-base text-slate-300 md:h-14 md:px-7';
 
 /** Camião com um reboque (atrelado normal) ou com dois reboques (atrelado link). */
 function IconeCamiao({ tipo, tamanho = 20 }: { tipo?: string | null; tamanho?: number }) {
@@ -97,9 +114,23 @@ export default async function OperacaoPage({
   });
   api.set('pagina', String(pagina));
 
-  const [op, lista] = await Promise.all([
+  const relatorioPedido = !!(sp.rd && sp.rf);
+  const intervaloInvalido = relatorioPedido && new Date(sp.rf!) < new Date(sp.rd!);
+  let erroRelatorio: string | null = intervaloInvalido
+    ? 'A hora final tem de ser igual ou posterior à hora inicial.'
+    : null;
+
+  const [op, lista, relatorio] = await Promise.all([
     laravel<Operation>(`/operations/${id}`),
     laravel<DischargeList>(`/operations/${id}/discharges?${api.toString()}`),
+    relatorioPedido && !intervaloInvalido
+      ? laravel<RelatorioConfirmados>(
+          `/operations/${id}/reports/confirmed?${new URLSearchParams({ de: sp.rd!, ate: sp.rf! }).toString()}`,
+        ).catch((e: Error) => {
+          erroRelatorio = `Não foi possível gerar o relatório (${e.message}).`;
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   const base = `/operacoes/${id}`;
@@ -119,7 +150,7 @@ export default async function OperacaoPage({
 
   const abas = [
     { valor: '', rotulo: 'Todos', n: contagens.todos },
-    { valor: 'in_transit', rotulo: 'Em trânsito', n: contagens.por_confirmar },
+    { valor: 'por_confirmar', rotulo: 'Por confirmar', n: contagens.por_confirmar },
     { valor: 'weighing', rotulo: 'A pesar', n: contagens.weighing },
     { valor: 'confirmed', rotulo: 'Confirmados', n: contagens.confirmed },
   ];
@@ -135,64 +166,70 @@ export default async function OperacaoPage({
         <FlashToast />
       </Suspense>
 
-      <div className="space-y-8 px-4 md:px-6 xl:px-8">
-        <Link
-          href={`${base}/novo`}
-          className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-base font-semibold text-white shadow-sm hover:opacity-95 active:opacity-90"
-        >
-          <Icon name="plus" />
-          Registar novo camião
-        </Link>
+      {/* Botão suspenso: abre o formulário em modal */}
+      <Link
+        href={`${base}/novo`}
+        scroll={false}
+        aria-label="Registar novo camião"
+        className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-2 rounded-full bg-accent px-6 text-base font-semibold text-white shadow-lg hover:opacity-95 active:opacity-90 md:bottom-8 md:right-8 md:h-16 md:px-8 md:text-lg"
+        style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <Icon name="plus" />
+        <span className="hidden sm:inline">Registar novo camião</span>
+      </Link>
 
+      <div className="space-y-8 px-4 pt-6 pb-32 md:pt-8 md:space-y-10 md:px-8 xl:px-10">
         {/* Resumo */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className={`${cartao} p-6`}>
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`${cartao} p-4`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recebido</div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight text-slate-900">{fmt(op.recebido_ton, 1)} t</span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+                {fmt(op.recebido_ton, 1)} t
+              </span>
               <span className="text-sm font-semibold text-slate-500">{pct}%</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-2 text-xs text-slate-500">de {fmt(op.esperado_ton, 1)} t esperadas</div>
+            <div className="mt-1 text-xs text-slate-500">de {fmt(op.esperado_ton, 1)} t esperadas</div>
           </div>
 
-          <div className={`${cartao} p-6`}>
+          <div className={`${cartao} p-4`}>
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Por confirmar</div>
             <div
-              className={`mt-2 text-3xl font-bold tracking-tight ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
+              className={`mt-1 text-2xl font-bold tracking-tight md:text-3xl ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
             >
               {op.pendentes_count}
             </div>
-            <div className="mt-3 text-xs text-slate-500">
+            <div className="mt-2 text-xs text-slate-500">
               {op.pendentes_count > 0 ? 'a aguardar confirmação' : 'tudo confirmado'}
             </div>
           </div>
         </div>
 
         {/* Plano por produto */}
-        <section className="space-y-4">
+        <section className="space-y-3">
           <h2 className={tituloSecao}>Plano por produto</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {op.items.map((it) => {
               const p = it.plano > 0 ? Math.min(100, Math.round((it.registado / it.plano) * 100)) : 0;
               return (
-                <div key={it.id} className={`${cartao} p-5`}>
-                  <div className="flex items-start justify-between gap-3">
+                <div key={it.id} className={`${cartao} min-w-[220px] flex-1 p-4`}>
+                  <div className="flex items-start justify-between gap-2">
                     <span className="text-base font-bold text-slate-900">{it.nome}</span>
-                    <span className="text-sm font-semibold text-slate-700">
+                    <span className="whitespace-nowrap text-sm font-semibold text-slate-700">
                       {fmt(it.registado)} / {fmt(it.plano)} {it.unidade_label}
                     </span>
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]"
                       style={{ width: `${p}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Saldo por lançar: {fmt(it.saldo)} {it.unidade_label}
+                  <p className="mt-1 text-xs text-slate-500">
+                    Saldo: {fmt(it.saldo)} {it.unidade_label}
                   </p>
                 </div>
               );
@@ -200,25 +237,76 @@ export default async function OperacaoPage({
           </div>
         </section>
 
-        {/* Camiões */}
+        {/* Relatório de confirmados */}
         <section className="space-y-4">
+          <h2 className={tituloSecao}>Relatório de confirmados</h2>
+          <div className={`${cartao} p-5 md:p-8`}>
+            <form
+              method="get"
+              action={base}
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-[1fr_1fr_auto] lg:items-end"
+            >
+              {CHAVES.map((k) => sp[k] && <input key={k} type="hidden" name={k} value={sp[k]} />)}
+              <label className="block">
+                <span className={rotuloCampo}>Desde</span>
+                <input type="datetime-local" name="rd" defaultValue={sp.rd} required className={campo} />
+              </label>
+              <label className="block">
+                <span className={rotuloCampo}>Até</span>
+                <input type="datetime-local" name="rf" defaultValue={sp.rf} required className={campo} />
+              </label>
+              <button className={`${botaoEscuro} sm:col-span-2 lg:col-span-1`}>Ver relatório</button>
+            </form>
+
+            {erroRelatorio && (
+              <p className="mt-5 rounded-xl bg-red-50 p-4 text-base text-red-700">{erroRelatorio}</p>
+            )}
+
+            {relatorio && (
+              <div className="mt-6 border-t border-slate-100 pt-6">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Camiões</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{relatorio.camioes}</div>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Sacos</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{relatorio.sacos}</div>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Toneladas</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
+                      {fmt(relatorio.toneladas, 1)} t
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm text-slate-500 md:text-base">
+                  Confirmados entre {sp.rd!.replace('T', ' ')} e {sp.rf!.replace('T', ' ')}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Camiões */}
+        <section className="space-y-5">
           <h2 className={tituloSecao}>Camiões</h2>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {abas.map((a) => {
               const ativa = (sp.st ?? '') === a.valor;
               return (
                 <Link
                   key={a.valor || 'todos'}
                   href={href({ st: a.valor || undefined, pagina: undefined })}
-                  className={`flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
+                  className={`flex h-12 items-center gap-2 rounded-full border px-5 text-base font-semibold transition md:h-14 md:px-7 ${
                     ativa
                       ? 'border-accent bg-accent text-white'
-                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
                   }`}
                 >
                   {a.rotulo}
-                  <span className={`text-xs ${ativa ? 'text-white/80' : 'text-slate-500'}`}>{a.n}</span>
+                  <span className={`text-sm ${ativa ? 'text-white/80' : 'text-slate-500'}`}>{a.n}</span>
                 </Link>
               );
             })}
@@ -226,7 +314,9 @@ export default async function OperacaoPage({
 
           <form method="get" action={base} className="space-y-4">
             {sp.st && <input type="hidden" name="st" value={sp.st} />}
-            <div className="flex gap-3">
+            {sp.rd && <input type="hidden" name="rd" value={sp.rd} />}
+            {sp.rf && <input type="hidden" name="rf" value={sp.rf} />}
+            <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 type="search"
                 name="q"
@@ -234,19 +324,17 @@ export default async function OperacaoPage({
                 placeholder="Pesquisar matrícula, motorista ou guia"
                 className={campo}
               />
-              <button className="h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white hover:bg-slate-800 active:opacity-90">
-                Pesquisar
-              </button>
+              <button className={botaoEscuro}>Pesquisar</button>
             </div>
 
-            <details className="group rounded-xl border border-slate-200 bg-white p-4" open={filtrosAvancados}>
-              <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+            <details className="group rounded-2xl border border-slate-200 bg-white p-5" open={filtrosAvancados}>
+              <summary className="flex min-h-12 cursor-pointer items-center text-base font-semibold text-slate-700">
                 Mais filtros
-                <span className="ml-2 text-xs font-normal text-slate-500 group-open:hidden">
+                <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
                   (transportadora, atrelado, datas)
                 </span>
               </summary>
-              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
                 <label className="block">
                   <span className={rotuloCampo}>Transportadora</span>
                   <select name="tr" defaultValue={sp.tr ?? ''} className={campo}>
@@ -278,13 +366,16 @@ export default async function OperacaoPage({
             </details>
 
             {filtrado && (
-              <Link href={base} className="inline-flex h-10 items-center text-sm font-semibold text-accent underline">
+              <Link
+                href={base}
+                className="inline-flex h-12 items-center text-base font-semibold text-accent underline"
+              >
                 Limpar todos os filtros
               </Link>
             )}
           </form>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-base text-slate-600">
             {meta.total === 0
               ? filtrado
                 ? 'Nenhum camião corresponde aos filtros.'
@@ -293,163 +384,82 @@ export default async function OperacaoPage({
           </p>
 
           {/* Legenda dos ícones */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm font-medium text-slate-600 md:text-base">
             <span className="flex items-center gap-2">
-              <IconeCamiao tipo="normal" tamanho={18} />
+              <IconeCamiao tipo="normal" tamanho={22} />
               Atrelado normal
             </span>
             <span className="flex items-center gap-2">
-              <IconeCamiao tipo="link" tamanho={18} />
+              <IconeCamiao tipo="link" tamanho={22} />
               Atrelado link
             </span>
           </div>
 
-          {/* Telemóvel: cartões */}
-          <ul className="space-y-3 md:hidden">
+          {/* Camiões: uma linha por camião, empilhadas */}
+          <ul className="space-y-2">
             {lista.data.map((d) => (
               <li
                 key={d.id}
-                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm md:gap-4 md:px-4"
               >
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100">
-                    <IconeCamiao tipo={d.tipo_atrelado} tamanho={28} />
+                <div className="flex h-12 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100">
+                  <IconeCamiao tipo={d.tipo_atrelado} tamanho={26} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-lg font-bold tracking-tight text-slate-900">{d.matricula}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
+                      {STATUS_LABEL[d.status]}
+                    </span>
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xl font-bold tracking-tight text-slate-900">{d.matricula}</span>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
-                        {STATUS_LABEL[d.status]}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-[15px] text-slate-600">
-                      {d.motorista} · {d.transportadora}
-                    </p>
+                  <p className="truncate text-sm text-slate-600">
+                    {d.motorista} · {d.transportadora}
+                    <span className="md:hidden"> · Guia {d.numero_guia}</span>
+                  </p>
+                </div>
+
+                <div className="hidden w-28 shrink-0 md:block">
+                  <div className="text-xs font-medium text-slate-500">Guia</div>
+                  <div className="truncate text-sm font-semibold text-slate-900">{d.numero_guia}</div>
+                </div>
+
+                <div className="hidden w-36 shrink-0 lg:block">
+                  <div className="text-xs font-medium text-slate-500">Data e hora</div>
+                  <div className="whitespace-nowrap text-sm font-semibold text-slate-900">
+                    {d.data}
+                    {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
                   </div>
                 </div>
 
-                <dl className="grid grid-cols-2 gap-3">
-                  <div>
-                    <dt className="text-xs font-medium text-slate-500">Guia</dt>
-                    <dd className="mt-1 text-[15px] font-semibold text-slate-900">{d.numero_guia}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-medium text-slate-500">Data e hora</dt>
-                    <dd className="mt-1 text-[15px] font-semibold text-slate-900">
-                      {d.data}
-                      {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-medium text-slate-500">Atrelado</dt>
-                    <dd className="mt-1 text-[15px] font-semibold capitalize text-slate-900">
-                      {d.tipo_atrelado ?? '—'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-medium text-slate-500">Sacos</dt>
-                    <dd className="mt-1 text-[15px] font-semibold text-slate-900">{d.total_sacos}</dd>
-                  </div>
-                </dl>
-
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="text-2xl font-bold tracking-tight text-slate-900">
-                      {fmt(d.peso_total_estimado, 1)} t
-                    </div>
-                    <div className="text-xs font-medium text-slate-500">estimado</div>
-                  </div>
-                  <DetalheCamiao
-                    camiao={d}
-                    href={`/operacoes/${op.id}/camioes/${d.id}`}
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                  />
+                <div className="hidden w-16 shrink-0 text-right sm:block">
+                  <div className="text-xs font-medium text-slate-500">Sacos</div>
+                  <div className="text-sm font-semibold text-slate-900">{d.total_sacos}</div>
                 </div>
+
+                <div className="w-20 shrink-0 text-right md:w-24">
+                  <div className="text-lg font-bold tracking-tight text-slate-900">{fmt(d.peso_total_estimado, 1)} t</div>
+                  <div className="text-xs font-medium text-slate-500">estimado</div>
+                </div>
+
+                <DetalheCamiao
+                  camiao={d}
+                  href={`/operacoes/${op.id}/camioes/${d.id}`}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+                />
               </li>
             ))}
           </ul>
 
-          {/* Tablet e ecrã grande: tabela (cabe sempre no cartão, sem rolar) */}
-          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
-            <table className="w-full table-fixed text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
-                <tr className="h-10">
-                  <th className="w-[30%] px-3 xl:w-[24%] xl:px-4">Matrícula</th>
-                  <th className="w-[26%] px-3 xl:w-[22%] xl:px-4">Motorista · transportadora</th>
-                  <th className="w-[14%] px-3 xl:w-[11%] xl:px-4">Guia</th>
-                  <th className="hidden w-[15%] px-3 lg:table-cell xl:px-4">Data e hora</th>
-                  <th className="hidden w-[8%] px-3 xl:table-cell xl:px-4">Atrelado</th>
-                  <th className="w-[9%] px-3 text-right xl:w-[7%] xl:px-4">Sacos</th>
-                  <th className="w-[11%] px-3 text-right xl:w-[9%] xl:px-4">Estimado</th>
-                  <th className="w-20 px-3 text-center xl:px-4">
-                    <span className="sr-only">Ver</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {lista.data.map((d) => (
-                  <tr key={d.id} className="h-16 hover:bg-slate-50">
-                    <td className="px-3 xl:px-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex w-10 shrink-0 justify-center">
-                          <IconeCamiao tipo={d.tipo_atrelado} />
-                        </span>
-                        <div className="min-w-0">
-                          <div className="truncate font-bold text-slate-900">{d.matricula}</div>
-                          <span
-                            className={`mt-0.5 inline-block rounded-full px-2 text-[10px] font-semibold leading-5 ${STATUS_COLOR[d.status]}`}
-                          >
-                            {STATUS_LABEL[d.status]}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 text-slate-600 xl:px-4">
-                      <div className="truncate" title={`${d.motorista} · ${d.transportadora}`}>
-                        {d.motorista} · {d.transportadora}
-                      </div>
-                    </td>
-                    <td className="px-3 font-semibold text-slate-900 xl:px-4">
-                      <div className="truncate">{d.numero_guia}</div>
-                    </td>
-                    <td className="hidden whitespace-nowrap px-3 text-slate-600 lg:table-cell xl:px-4">
-                      {d.data}
-                      {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
-                    </td>
-                    <td className="hidden px-3 capitalize text-slate-700 xl:table-cell xl:px-4">
-                      {d.tipo_atrelado ?? '—'}
-                    </td>
-                    <td className="px-3 text-right font-semibold text-slate-900 xl:px-4">{d.total_sacos}</td>
-                    <td className="whitespace-nowrap px-3 text-right font-semibold text-slate-900 xl:px-4">
-                      {fmt(d.peso_total_estimado, 1)} t
-                    </td>
-                    <td className="px-3 text-center xl:px-4">
-                      <DetalheCamiao
-                        camiao={d}
-                        href={`/operacoes/${op.id}/camioes/${d.id}`}
-                        className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
           {/* Paginação */}
           {meta.ultima > 1 && (
-            <nav aria-label="Paginação" className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <nav aria-label="Paginação" className="flex flex-wrap items-center justify-center gap-3 pt-2">
               {meta.pagina > 1 ? (
-                <Link
-                  href={href({ pagina: String(meta.pagina - 1) })}
-                  className="flex h-12 items-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                >
+                <Link href={href({ pagina: String(meta.pagina - 1) })} className={botaoPagina}>
                   Anterior
                 </Link>
               ) : (
-                <span className="flex h-12 items-center rounded-xl border border-slate-200 px-5 text-sm text-slate-300">
-                  Anterior
-                </span>
+                <span className={botaoPaginaOff}>Anterior</span>
               )}
 
               {paginas(meta.pagina, meta.ultima).map((n, i) =>
@@ -462,7 +472,7 @@ export default async function OperacaoPage({
                     key={n}
                     href={href({ pagina: n === 1 ? undefined : String(n) })}
                     aria-current={n === meta.pagina ? 'page' : undefined}
-                    className={`flex h-12 min-w-12 items-center justify-center rounded-xl border px-3 text-sm font-semibold ${
+                    className={`flex h-12 min-w-12 items-center justify-center rounded-xl border px-3 text-base font-semibold md:h-14 md:min-w-14 ${
                       n === meta.pagina
                         ? 'border-accent bg-accent text-white shadow-sm'
                         : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
@@ -474,16 +484,11 @@ export default async function OperacaoPage({
               )}
 
               {meta.pagina < meta.ultima ? (
-                <Link
-                  href={href({ pagina: String(meta.pagina + 1) })}
-                  className="flex h-12 items-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                >
+                <Link href={href({ pagina: String(meta.pagina + 1) })} className={botaoPagina}>
                   Seguinte
                 </Link>
               ) : (
-                <span className="flex h-12 items-center rounded-xl border border-slate-200 px-5 text-sm text-slate-300">
-                  Seguinte
-                </span>
+                <span className={botaoPaginaOff}>Seguinte</span>
               )}
             </nav>
           )}

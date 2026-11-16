@@ -101,3 +101,5 @@ export type DischargeList = {
   contagens: { todos: number; por_confirmar: number; weighing: number; confirmed: number };
   transportadoras: string[];
 };
+
+export type RelatorioConfirmados = { camioes: number; sacos: number; toneladas: number };
