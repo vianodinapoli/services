@@ -43,7 +43,7 @@ export default async function CamiaoPage({ params }: { params: Promise<{ id: str
       <div className="flex justify-center px-4 py-6">
         <article className="ticket w-full max-w-[340px] rounded-lg border border-gray-300 bg-white px-5 py-5 shadow-sm">
           <header className="text-center">
-            <div className="font-display text-[13px] font-bold tracking-wide text-gray-900">SGL - CREATIV DEMO</div>
+            <div className="font-display text-[13px] font-bold tracking-wide text-gray-900">SGT - GRUPO FEM</div>
             <div className="mt-0.5 text-[11px] font-bold uppercase tracking-[2px] text-gray-700">
               {provisorio ? 'Ticket provisório' : 'Ticket de descarga'}
             </div>

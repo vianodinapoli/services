@@ -48,7 +48,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string }
         <button onClick={() => setAberto(true)} aria-label="Abrir menu" className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10">
           <Icon name="menu" />
         </button>
-        <span className="font-display text-sm font-bold">SGL - CREATIV DEMO</span>
+        <span className="font-display text-sm font-bold">SGT - GRUPO FEM</span>
       </div>
 
       {aberto && <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setAberto(false)} />}
@@ -60,7 +60,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string }
       >
         <div className={`flex h-16 shrink-0 items-center gap-3 border-b border-white/5 px-4 ${recolhida ? 'md:justify-center md:px-0' : ''}`}>
           <div className={`min-w-0 flex-1 ${recolhida ? 'md:hidden' : ''}`}>
-            <div className="truncate font-display text-[14.5px] font-bold leading-tight text-slate-100">SGL - CREATIV DEMO</div>
+            <div className="truncate font-display text-[14.5px] font-bold leading-tight text-slate-100">SGT - GRUPO FEM</div>
             <div className="text-[10px] uppercase tracking-[1.4px] text-gray-500">Sistema de Gestão</div>
           </div>
           <button onClick={alternar} aria-label="Recolher menu" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-gray-500 hover:bg-white/5 hover:text-slate-200 md:flex">

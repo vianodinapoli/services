@@ -48,7 +48,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen">
       <section className="relative hidden flex-1 flex-col justify-between bg-sb p-12 text-white lg:flex">
         <div>
-          <div className="font-display text-2xl font-bold tracking-wide">SGL - CREATIV DEMO</div>
+          <div className="font-display text-2xl font-bold tracking-wide">SGT - GRUPO FEM</div>
           <div className="mt-1 text-xs uppercase tracking-[2px] text-gray-500">Sistema de Gestão</div>
         </div>
         <div>
