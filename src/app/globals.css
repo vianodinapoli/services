@@ -5,6 +5,19 @@
   --color-sb-surface: #161a22;
   --color-accent: #c60a1a;
   --color-content: #f3f4f6;
+
+  --color-nitro-50:  #f0f9f1;
+  --color-nitro-100: #dcf0de;
+  --color-nitro-200: #bae0be;
+  --color-nitro-300: #8dcb94;
+  --color-nitro-400: #5fb069;
+  --color-nitro-500: #3f9347; /* verde do logo */
+  --color-nitro-600: #327a3a;
+  --color-nitro-700: #2a6130;
+  --color-nitro-800: #234e29;
+  --color-nitro-900: #173a1d;
+  --color-nitro-950: #0d2412;
+
 }
 
 @theme inline {
