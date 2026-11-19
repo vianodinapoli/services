@@ -4,6 +4,14 @@ import PageHeader from '@/components/PageHeader';
 import ImprimirBotao from '@/components/ImprimirBotao';
 import { Icon } from '@/components/icons';
 import { fmt, STATUS_LABEL, type DischargeDetail } from '@/lib/laravel-types';
+import { dataHoraMaputo } from '@/lib/tempos';
+
+const MARCOS = [
+  ['carregado', 'Carregado'],
+  ['saiu_porto', 'Saída do porto'],
+  ['chegou_balanca', 'Chegada à balança'],
+  ['saiu_descarga', 'Saída da descarga'],
+] as const;
 
 function Linha({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -34,7 +42,7 @@ function Aviso({ children }: { children: React.ReactNode }) {
 export default async function CamiaoPage({ params }: { params: Promise<{ id: string; did: string }> }) {
   const { id, did } = await params;
   const d = await laravel<DischargeDetail>(`/discharges/${did}`);
-  const provisorio = d.status !== 'confirmed';
+  const provisorio = d.status !== 'confirmed' && d.status !== 'finished';
 
   return (
     <>
@@ -56,8 +64,18 @@ export default async function CamiaoPage({ params }: { params: Promise<{ id: str
           <Divisor titulo="Identificação" />
           <Linha label="Data">{d.data}</Linha>
           <Linha label="Guia">{d.numero_guia}</Linha>
-          <Linha label="Saída do porto">{d.hora_saida_porto ?? '-'}</Linha>
           <Linha label="Registado por">{d.registado_por ?? '-'}</Linha>
+
+          <Divisor titulo="Registo de tempos" />
+          {MARCOS.map(([chave, rotulo]) => {
+            const t = d.tempos?.[chave];
+            return (
+              <Linha key={chave} label={rotulo}>
+                {dataHoraMaputo(t?.em) ?? '-'}
+                {t?.por && <span className="block text-[10px] font-normal text-gray-500">{t.por}</span>}
+              </Linha>
+            );
+          })}
 
           <Divisor titulo="Transporte" />
           <Linha label="Motorista">{d.motorista}</Linha>

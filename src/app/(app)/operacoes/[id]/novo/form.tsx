@@ -28,7 +28,6 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
 
   const err = (k: string) => errors[k]?.[0];
   const hoje = new Date().toLocaleDateString('en-CA');
-  const agora = new Date().toTimeString().slice(0, 5);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,7 +49,6 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
         body: JSON.stringify({
           operation_id: operation.id,
           data: f.get('data'),
-          hora_saida_porto: f.get('hora_saida_porto') || null,
           motorista: f.get('motorista'),
           matricula: f.get('matricula'),
           transportadora: f.get('transportadora'),
@@ -71,7 +69,7 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
         return;
       }
 
-      const msg = encodeURIComponent('Camião registado. Aguarda confirmação na balança.');
+      const msg = encodeURIComponent('Camião registado como carregado. Aguarda a saída do porto.');
       router.push(`/operacoes/${operation.id}?ok=${msg}`);
       router.refresh();
     } catch {
@@ -86,15 +84,11 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
       {err('geral') && <p className="rounded-lg bg-red-50 p-3 text-red-700">{err('geral')}</p>}
 
       <section className={card}>
-        <h2 className="font-display text-sm font-bold uppercase tracking-wide text-gray-500">Saída do porto</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Data">
-            <input type="date" name="data" defaultValue={hoje} required className={input} suppressHydrationWarning />
-          </Field>
-          <Field label="Hora de saída">
-            <input type="time" name="hora_saida_porto" defaultValue={agora} className={input} suppressHydrationWarning />
-          </Field>
-        </div>
+        <h2 className="font-display text-sm font-bold uppercase tracking-wide text-gray-500">Carregamento</h2>
+        <Field label="Data">
+          <input type="date" name="data" defaultValue={hoje} required className={input} suppressHydrationWarning />
+        </Field>
+        <p className="text-sm text-gray-500">A hora de carregamento fica registada automaticamente pelo servidor.</p>
       </section>
 
       <section className={card}>
