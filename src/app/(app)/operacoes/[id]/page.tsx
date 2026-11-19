@@ -3,12 +3,11 @@ import Link from 'next/link';
 import { laravel } from '@/lib/laravel';
 import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
-import DetalheCamiao from '@/components/DetalheCamiao';
+import AtualizarAuto from '@/components/AtualizarAuto';
+import LinhaCamiao from '@/components/LinhaCamiao';
 import { Icon } from '@/components/icons';
 import {
   fmt,
-  STATUS_COLOR,
-  STATUS_LABEL,
   type DischargeList,
   type Operation,
   type RelatorioConfirmados,
@@ -151,6 +150,8 @@ export default async function OperacaoPage({
   const abas = [
     { valor: '', rotulo: 'Todos', n: contagens.todos },
     { valor: 'por_confirmar', rotulo: 'Por confirmar', n: contagens.por_confirmar },
+    { valor: 'loaded', rotulo: 'Carregados', n: contagens.loaded },
+    { valor: 'in_transit', rotulo: 'Em trânsito', n: contagens.in_transit },
     { valor: 'weighing', rotulo: 'A pesar', n: contagens.weighing },
     { valor: 'confirmed', rotulo: 'Confirmados', n: contagens.confirmed },
   ];
@@ -160,14 +161,12 @@ export default async function OperacaoPage({
   const ate = (meta.pagina - 1) * por + lista.data.length;
 
   return (
-
-    
     <>
-
       <PageHeader title={op.navio} subtitle={op.empresa} back="/operacoes" />
       <Suspense fallback={null}>
         <FlashToast />
       </Suspense>
+      <AtualizarAuto />
 
       {/* Botão suspenso: abre o formulário em modal */}
       <Link
@@ -401,56 +400,12 @@ export default async function OperacaoPage({
           {/* Camiões: uma linha por camião, empilhadas */}
           <ul className="space-y-2">
             {lista.data.map((d) => (
-              <li
+              <LinhaCamiao
                 key={d.id}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm md:gap-4 md:px-4"
-              >
-                <div className="flex h-12 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                  <IconeCamiao tipo={d.tipo_atrelado} tamanho={26} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-lg font-bold tracking-tight text-slate-900">{d.matricula}</span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
-                      {STATUS_LABEL[d.status]}
-                    </span>
-                  </div>
-                  <p className="truncate text-sm text-slate-600">
-                    {d.motorista} · {d.transportadora}
-                    <span className="md:hidden"> · Guia {d.numero_guia}</span>
-                  </p>
-                </div>
-
-                <div className="hidden w-28 shrink-0 md:block">
-                  <div className="text-xs font-medium text-slate-500">Guia</div>
-                  <div className="truncate text-sm font-semibold text-slate-900">{d.numero_guia}</div>
-                </div>
-
-                <div className="hidden w-36 shrink-0 lg:block">
-                  <div className="text-xs font-medium text-slate-500">Data e hora</div>
-                  <div className="whitespace-nowrap text-sm font-semibold text-slate-900">
-                    {d.data}
-                    {d.hora_saida_porto ? ` ${d.hora_saida_porto}` : ''}
-                  </div>
-                </div>
-
-                <div className="hidden w-16 shrink-0 text-right sm:block">
-                  <div className="text-xs font-medium text-slate-500">Sacos</div>
-                  <div className="text-sm font-semibold text-slate-900">{d.total_sacos}</div>
-                </div>
-
-                <div className="w-20 shrink-0 text-right md:w-24">
-                  <div className="text-lg font-bold tracking-tight text-slate-900">{fmt(d.peso_total_estimado, 1)} t</div>
-                  <div className="text-xs font-medium text-slate-500">estimado</div>
-                </div>
-
-                <DetalheCamiao
-                  camiao={d}
-                  href={`/operacoes/${op.id}/camioes/${d.id}`}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                />
-              </li>
+                camiao={d}
+                operacaoId={op.id}
+                icone={<IconeCamiao tipo={d.tipo_atrelado} tamanho={26} />}
+              />
             ))}
           </ul>
 
