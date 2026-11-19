@@ -1,6 +1,6 @@
 import { laravel } from '@/lib/laravel';
 import PageHeader from '@/components/PageHeader';
-import NovaDescargaForm from './form';
+import NovaDescargaForm from '@/components/NovaDescargaForm'; 
 import type { Operation } from '@/lib/laravel-types';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {

@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SignatureCanvas from 'react-signature-canvas';
 import { fmt, type Operation } from '@/lib/laravel-types';
+import CartaNovaAviso from '@/components/CartaNovaAviso';
+import MatriculaInput from '@/components/MatriculaInput';
 
 const input =
   'h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200';
@@ -23,6 +25,8 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
   const router = useRouter();
   const sig = useRef<SignatureCanvas>(null);
   const [qtys, setQtys] = useState<Record<number, string>>({});
+  const [matricula, setMatricula] = useState('');
+  const [motorista, setMotorista] = useState('');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
 
@@ -93,17 +97,37 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
 
       <section className={card}>
         <h2 className="font-display text-sm font-bold uppercase tracking-wide text-gray-500">Camião</h2>
-        <Field label="Motorista" error={err('motorista')}>
-          <input name="motorista" required className={input} />
-        </Field>
+
         <div className="grid grid-cols-2 gap-4">
           <Field label="Matrícula" error={err('matricula')}>
-            <input name="matricula" required className={input} />
+            <MatriculaInput
+              operationId={operation.id}
+              value={matricula}
+              onChange={setMatricula}
+              onPick={(s) => {
+                setMatricula(s.matricula);
+                setMotorista(s.nome_completo);
+              }}
+              className={input}
+            />
           </Field>
           <Field label="Número da guia" error={err('numero_guia')}>
             <input name="numero_guia" required className={input} />
           </Field>
         </div>
+
+        <CartaNovaAviso operationId={operation.id} matricula={matricula} />
+
+        <Field label="Motorista" error={err('motorista')}>
+          <input
+            name="motorista"
+            required
+            value={motorista}
+            onChange={(e) => setMotorista(e.target.value)}
+            className={input}
+          />
+        </Field>
+
         <Field label="Transportadora" error={err('transportadora')}>
           <input name="transportadora" list="transportadoras" required className={input} />
         </Field>
