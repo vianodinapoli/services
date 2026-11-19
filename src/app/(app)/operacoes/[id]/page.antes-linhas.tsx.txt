@@ -179,6 +179,32 @@ export default async function OperacaoPage({
       </Link>
 
       <div className="space-y-8 px-4 pb-32 md:space-y-10 md:px-8 xl:px-10">
+        {/* Locais previstos para descarga */}
+        {op.locais && op.locais.length > 0 && (
+          <section className={`${cartao} flex flex-wrap items-center gap-3 p-4`}>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">
+              Descarga em
+            </span>
+            {op.locais.map((l) => (
+              <span
+                key={l.id}
+                className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-base font-semibold ${
+                  l.principal
+                    ? 'border-green-600 bg-green-50 text-green-800'
+                    : 'border-slate-300 bg-white text-slate-800'
+                }`}
+              >
+                {l.nome}
+                {l.principal && (
+                  <span className="rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                    principal
+                  </span>
+                )}
+              </span>
+            ))}
+          </section>
+        )}
+
         {/* Resumo */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
           <div className={`${cartao} p-6 md:p-8`}>

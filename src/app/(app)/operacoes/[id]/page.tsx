@@ -160,7 +160,10 @@ export default async function OperacaoPage({
   const ate = (meta.pagina - 1) * por + lista.data.length;
 
   return (
+
+    
     <>
+
       <PageHeader title={op.navio} subtitle={op.empresa} back="/operacoes" />
       <Suspense fallback={null}>
         <FlashToast />

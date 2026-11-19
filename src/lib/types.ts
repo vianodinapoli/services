@@ -22,6 +22,7 @@ export interface Discharge {
   observacoes: string | null; items: DischargeItem[];
 }
 export interface Operation {
+  locais?: { id: number; nome: string; tipo: 'armazem' | 'yard'; principal: boolean }[];
   id: number; navio: string; empresa: string; bl: string | null; factura: string | null;
   dataChegada: string | null; startedAt: string | null; archivedAt: string | null; archived: boolean;
   quantidadeEsperada: number; recebidoTon: number; faltaTon: number; progresso: number;

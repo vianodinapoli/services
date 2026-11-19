@@ -39,6 +39,7 @@ export type Operation = {
   transportadoras: string[];
   items: Item[];
   discharges?: Discharge[];
+  locais?: { id: number; nome: string; tipo: 'armazem' | 'yard'; principal: boolean }[];
 };
 
 export const STATUS_LABEL: Record<Discharge['status'], string> = {
