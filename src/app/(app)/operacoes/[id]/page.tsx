@@ -6,6 +6,7 @@ import FlashToast from '@/components/FlashToast';
 import AtualizarAuto from '@/components/AtualizarAuto';
 import LinhaCamiao from '@/components/LinhaCamiao';
 import { Icon } from '@/components/icons';
+import ModalBalanco from '@/components/ModalBalanco';
 import BalancoConfirmados from '@/components/BalancoConfirmados';
 import {
   fmt,
@@ -272,8 +273,8 @@ export default async function OperacaoPage({
               <p className="mt-5 rounded-xl bg-red-50 p-4 text-base text-red-700">{erroRelatorio}</p>
             )}
 
-            {relatorio && (
-              <div className="mt-6 border-t border-slate-100 pt-6">
+                       {relatorio && (
+              <ModalBalanco fecharHref={href({ rd: undefined, rf: undefined })}>
                 <BalancoConfirmados
                   relatorio={relatorio}
                   navio={op.navio}
@@ -282,7 +283,7 @@ export default async function OperacaoPage({
                   ate={sp.rf!}
                   geradoEm={geradoEm}
                 />
-              </div>
+              </ModalBalanco>
             )}
           </div>
         </section>

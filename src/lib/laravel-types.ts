@@ -132,4 +132,28 @@ export type DischargeList = {
   transportadoras: string[];
 };
 
-export type RelatorioConfirmados = { camioes: number; sacos: number; toneladas: number };
+export type RelatorioProduto = {
+  nome: string;
+  unidade_label: string;
+  quantidade: number;
+};
+
+export type RelatorioConfirmados = {
+  descarregados: string | number | null | undefined;
+  camioes: number;
+  sacos: number;
+  toneladas: number;
+
+  carregados?: number | null;
+  em_transito?: number | null;
+  a_pesar?: number | null;
+
+  esperada_ton?: number | null;
+  em_transito_ton?: number | null;
+
+  atrasados?: number | null;
+  divergencias?: number | null;
+
+  // Tipo(s) de carga confirmados no intervalo, com a quantidade de cada um
+  produtos?: RelatorioProduto[];
+};

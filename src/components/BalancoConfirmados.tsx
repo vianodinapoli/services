@@ -20,9 +20,11 @@ function Linha({
 }) {
   const cor = tom === 'alerta' ? 'text-red-600' : tom === 'ok' ? 'text-emerald-600' : 'text-slate-900';
   return (
-    <div className="flex items-baseline justify-between gap-3 py-1">
+    <div className="flex items-baseline justify-between gap-3 py-1.5">
       <span className="text-sm text-slate-600">{rotulo}</span>
-      <span className={`tabular-nums ${forte ? 'text-base font-bold' : 'text-sm font-semibold'} ${cor}`}>
+      <span
+        className={`whitespace-nowrap tabular-nums ${forte ? 'text-base font-bold' : 'text-sm font-semibold'} ${cor}`}
+      >
         {valor ?? '—'}
       </span>
     </div>
@@ -31,8 +33,10 @@ function Linha({
 
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section className="border-t border-slate-200 px-3 py-2">
-      <h3 className="pb-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">{titulo}</h3>
+    <section className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <h3 className="border-b border-slate-200 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        {titulo}
+      </h3>
       <div className="divide-y divide-slate-100">{children}</div>
     </section>
   );
@@ -41,8 +45,8 @@ function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode
 const ton = (v?: number | null) => (v == null ? null : `${fmt(v, 1)} t`);
 
 /**
- * Cartão único e estreito, feito para tirar screenshot e enviar para o grupo de operações.
- * Os campos novos vêm do endpoint /operations/{id}/reports/confirmed.
+ * Responsivo pela largura do próprio cartão (não do ecrã):
+ * a grelha cria as colunas que cabem, cada uma com pelo menos 220px.
  */
 export default function BalancoConfirmados({
   relatorio,
@@ -67,56 +71,76 @@ export default function BalancoConfirmados({
   return (
     <article
       id="balanco-confirmados"
-      className="mx-auto w-full max-w-[360px] overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm"
+      className="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm"
     >
-      <header className="bg-slate-900 px-3 py-2.5 text-white">
-        <h3 className="font-display text-sm font-bold uppercase tracking-wide">Balanço de confirmados</h3>
-        <p className="mt-0.5 text-sm font-semibold">{navio}</p>
-        {empresa && <p className="text-xs text-slate-300">{empresa}</p>}
-        <p className="mt-1 text-xs text-slate-200">
-          {dataHora(de)} até {dataHora(ate)}
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 bg-slate-900 px-4 py-3 text-white">
+        <div className="min-w-0">
+          <h3 className="font-display text-xs font-bold uppercase tracking-wider text-slate-300">
+            Balanço de confirmados
+          </h3>
+          <p className="mt-0.5 text-xl font-bold leading-tight">{navio}</p>
+          {empresa && <p className="text-sm text-slate-300">{empresa}</p>}
+        </div>
+        <p className="text-sm font-semibold text-slate-100">
+          <span className="whitespace-nowrap">{dataHora(de)}</span>
+          <span className="px-1.5 text-slate-400">→</span>
+          <span className="whitespace-nowrap">{dataHora(ate)}</span>
         </p>
       </header>
 
-      <Bloco titulo="Resumo (camiões)">
-        <Linha rotulo="Carregados" valor={r.carregados} />
-        <Linha rotulo="Em trânsito" valor={r.em_transito} />
-        <Linha rotulo="A pesar" valor={r.a_pesar} />
-        <Linha rotulo="Confirmados" valor={r.camioes} forte />
-      </Bloco>
+      <div
+        className="grid gap-3 p-3"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
+      >
+        <Bloco titulo="Resumo (camiões)">
+          <Linha rotulo="Carregados" valor={r.carregados} />
+          <Linha rotulo="Em trânsito" valor={r.em_transito} />
+          <Linha rotulo="A pesar" valor={r.a_pesar} />
+          <Linha rotulo="Confirmados" valor={r.camioes} forte />
+        </Bloco>
 
-      <Bloco titulo="Carga">
-        <Linha rotulo="Esperada" valor={ton(r.esperada_ton)} />
-        <Linha rotulo="Confirmada" valor={ton(r.toneladas)} forte />
-        <Linha rotulo="Em trânsito" valor={ton(r.em_transito_ton)} />
-      </Bloco>
+        <Bloco titulo="Carga">
+          <Linha rotulo="Esperada" valor={ton(r.esperada_ton)} />
+          <Linha rotulo="Confirmada" valor={ton(r.toneladas)} forte />
+          <Linha rotulo="Em trânsito" valor={ton(r.em_transito_ton)} />
+        </Bloco>
 
-      <Bloco titulo="Descarga">
-        <Linha rotulo="Camiões descarregados" valor={r.descarregados} forte />
-      </Bloco>
-
-      <Bloco titulo="Alertas">
-        {semAlertas ? (
-          <Linha rotulo="Sem atrasados nem divergências" valor="OK" tom="ok" />
-        ) : (
-          <>
-            <Linha
-              rotulo="Camiões atrasados"
-              valor={atrasados}
-              forte
-              tom={atrasados && atrasados > 0 ? 'alerta' : 'normal'}
-            />
-            <Linha
-              rotulo="Camiões com divergência"
-              valor={divergencias}
-              forte
-              tom={divergencias && divergencias > 0 ? 'alerta' : 'normal'}
-            />
-          </>
+        {r.produtos && r.produtos.length > 0 && (
+          <Bloco titulo={r.produtos.length > 1 ? 'Tipos de carga' : 'Tipo de carga'}>
+            {r.produtos.map((p) => (
+              <Linha
+                key={p.nome}
+                rotulo={p.nome}
+                valor={`${fmt(p.quantidade)} ${p.unidade_label}`}
+                forte
+              />
+            ))}
+          </Bloco>
         )}
-      </Bloco>
 
-      <footer className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+        <Bloco titulo="Alertas">
+          {semAlertas ? (
+            <Linha rotulo="Sem atrasados nem divergências" valor="OK" tom="ok" />
+          ) : (
+            <>
+              <Linha
+                rotulo="Camiões atrasados"
+                valor={atrasados}
+                forte
+                tom={atrasados && atrasados > 0 ? 'alerta' : 'normal'}
+              />
+              <Linha
+                rotulo="Camiões com divergência"
+                valor={divergencias}
+                forte
+                tom={divergencias && divergencias > 0 ? 'alerta' : 'normal'}
+              />
+            </>
+          )}
+        </Bloco>
+      </div>
+
+      <footer className="border-t border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">
         Gerado em {geradoEm}
       </footer>
     </article>
