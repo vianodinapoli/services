@@ -6,6 +6,7 @@ import FlashToast from '@/components/FlashToast';
 import AtualizarAuto from '@/components/AtualizarAuto';
 import LinhaCamiao from '@/components/LinhaCamiao';
 import { Icon } from '@/components/icons';
+import BalancoConfirmados from '@/components/BalancoConfirmados';
 import {
   fmt,
   type DischargeList,
@@ -160,6 +161,13 @@ export default async function OperacaoPage({
   const de = (meta.pagina - 1) * por + 1;
   const ate = (meta.pagina - 1) * por + lista.data.length;
 
+  // Hora de geração do balanço, sempre em hora de Maputo (o servidor pode estar em UTC).
+  const geradoEm = new Date().toLocaleString('pt-PT', {
+    timeZone: 'Africa/Maputo',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+
   return (
     <>
       <PageHeader title={op.navio} subtitle={op.empresa} back="/operacoes" />
@@ -266,25 +274,14 @@ export default async function OperacaoPage({
 
             {relatorio && (
               <div className="mt-6 border-t border-slate-100 pt-6">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Camiões</div>
-                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{relatorio.camioes}</div>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Sacos</div>
-                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{relatorio.sacos}</div>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3 md:p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">Toneladas</div>
-                    <div className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
-                      {fmt(relatorio.toneladas, 1)} t
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm text-slate-500 md:text-base">
-                  Confirmados entre {sp.rd!.replace('T', ' ')} e {sp.rf!.replace('T', ' ')}
-                </p>
+                <BalancoConfirmados
+                  relatorio={relatorio}
+                  navio={op.navio}
+                  empresa={op.empresa}
+                  de={sp.rd!}
+                  ate={sp.rf!}
+                  geradoEm={geradoEm}
+                />
               </div>
             )}
           </div>
