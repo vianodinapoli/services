@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import DetalheCamiao from '@/components/DetalheCamiao';
+import FeitoAnimado from '@/components/FeitoAnimado';
 import { fmt, STATUS_COLOR, STATUS_LABEL, type DischargeList } from '@/lib/laravel-types';
 import { horaMaputo } from '@/lib/tempos';
 
@@ -24,6 +26,7 @@ export default function LinhaCamiao({
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [enviando, setEnviando] = useState(false);
+  const [feito, setFeito] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [dx, setDx] = useState(0);
   const [arrastando, setArrastando] = useState(false);
@@ -31,7 +34,7 @@ export default function LinhaCamiao({
   const dxRef = useRef(0);
   const inicio = useRef<{ x: number; y: number; id: number; largura: number; ativo: boolean } | null>(null);
 
-  const ocupado = enviando || pendente;
+  const ocupado = enviando || pendente || feito;
   // Só um camião "Carregado" pode ser deslizado (2.º agente: saiu do porto).
   // A chegada à balança e a saída da descarga são automáticas, feitas pela pesagem.
   const carregado = d.status === 'loaded';
@@ -72,7 +75,9 @@ export default function LinhaCamiao({
         if (res.status === 422) iniciar(() => router.refresh());
         return;
       }
-      iniciar(() => router.refresh());
+      // Sucesso: mostra a animação "Em trânsito!" e só actualiza a lista quando ela acabar
+      repor();
+      setFeito(true);
     } catch {
       setErro('Sem ligação ao servidor. Verifique a rede e tente novamente.');
       repor();
@@ -226,6 +231,21 @@ export default function LinhaCamiao({
           {erro}
         </p>
       )}
+
+      {/* Animação no centro do ecrã (portal: escapa ao overflow-hidden e ao translateX da linha) */}
+      {feito &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <FeitoAnimado
+            titulo="Em trânsito!"
+            subtitulo={`${d.matricula} saiu do porto`}
+            onFim={() => {
+              setFeito(false);
+              iniciar(() => router.refresh());
+            }}
+          />,
+          document.body,
+        )}
     </li>
   );
 }

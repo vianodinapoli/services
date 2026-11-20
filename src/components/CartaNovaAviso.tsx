@@ -30,7 +30,7 @@ export default function CartaNovaAviso({ operationId, matricula }: { operationId
   if (!res.na_lista) {
     return (
       <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-        Matrícula <b>{res.matricula}</b> não está na lista da carta nova.
+        Matrícula <b>{res.matricula}</b> não está na lista - Contactar a central.
       </div>
     );
   }
