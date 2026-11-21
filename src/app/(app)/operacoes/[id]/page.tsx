@@ -274,7 +274,10 @@ export default async function OperacaoPage({
             )}
 
                        {relatorio && (
-              <ModalBalanco fecharHref={href({ rd: undefined, rf: undefined })}>
+              <ModalBalanco
+                fecharHref={href({ rd: undefined, rf: undefined })}
+                excelHref={`/api/laravel/operations/${id}/reports/confirmed?de=${encodeURIComponent(sp.rd!)}&ate=${encodeURIComponent(sp.rf!)}&formato=xlsx`}
+              >
                 <BalancoConfirmados
                   relatorio={relatorio}
                   navio={op.navio}
