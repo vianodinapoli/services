@@ -14,6 +14,13 @@ type Camiao = DischargeList['data'][number];
 const LIMIAR_MIN = 110;
 const LIMIAR_REL = 0.35;
 
+/** Cores do atraso: iguais às do sinal da central (nivelAtraso do Laravel). */
+const COR_ATRASO: Record<string, { bg: string; rotulo: string }> = {
+  ok: { bg: 'bg-emerald-500', rotulo: 'Dentro do prazo' },
+  warn: { bg: 'bg-orange-500', rotulo: 'Atenção ao prazo' },
+  danger: { bg: 'bg-red-600', rotulo: 'Atrasado' },
+};
+
 export default function LinhaCamiao({
   camiao: d,
   operacaoId,
@@ -144,6 +151,17 @@ export default function LinhaCamiao({
 
   const horaBase = horaMaputo(d.carregado_em) ?? d.hora_saida_porto;
 
+  // Atraso até à balança (calculado no Laravel: nivelAtraso). Carregado ainda não tem atraso.
+  const { nivel_atraso: nivel, atraso_minutos: minAtraso, atraso_motivo: motivoAtraso } = d as Camiao & {
+    nivel_atraso?: string | null;
+    atraso_minutos?: number | null;
+    atraso_motivo?: string | null;
+  };
+  const corAtraso = nivel ? COR_ATRASO[nivel] : undefined;
+  const textoAtraso = corAtraso
+    ? `${corAtraso.rotulo}${minAtraso ? ` (${minAtraso} min)` : ''}${motivoAtraso ? `: ${motivoAtraso}` : ''}`
+    : '';
+
   return (
     <li className="relative overflow-hidden rounded-xl">
       {carregado && (
@@ -177,6 +195,18 @@ export default function LinhaCamiao({
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
               {STATUS_LABEL[d.status]}
             </span>
+            {corAtraso && (
+              <span className="flex items-center gap-1.5" title={textoAtraso}>
+                <span
+                  role="img"
+                  aria-label={textoAtraso}
+                  className={`h-3.5 w-3.5 rounded-full shadow ring-2 ring-white ${corAtraso.bg}`}
+                />
+                {minAtraso != null && minAtraso > 0 && (
+                  <span className="text-xs font-semibold text-slate-600">{minAtraso} min</span>
+                )}
+              </span>
+            )}
           </div>
           <p className="truncate text-sm text-slate-600">
             {d.motorista} · {d.transportadora}
@@ -190,6 +220,9 @@ export default function LinhaCamiao({
                 </span>
               ))}
             </p>
+          )}
+          {motivoAtraso && (
+            <p className="mt-0.5 text-xs font-semibold text-red-700">Atraso: {motivoAtraso}</p>
           )}
           {carregado && (
             <p className="mt-0.5 text-xs font-semibold text-emerald-700">Deslize para a direita: saiu do porto →</p>
