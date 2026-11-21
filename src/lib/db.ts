@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { Redis } from '@upstash/redis';
 import type { Contentor, DischargeStatus } from './types';
 import { seed } from './seed';
 
@@ -25,15 +26,39 @@ export interface DB {
 }
 
 const FILE = path.join(process.cwd(), 'data', 'db.json');
+const KEY = 'fem-descargas:db';
+
+// Na Vercel (Upstash Redis) os dados ficam na nuvem; em local, sem variáveis, usa ficheiro.
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+const redis = REDIS_URL && REDIS_TOKEN
+  ? new Redis({ url: REDIS_URL, token: REDIS_TOKEN, cache: 'no-store' })
+  : null;
+
 let fila: Promise<unknown> = Promise.resolve();
 
+function semArmazenamento(): never {
+  throw new Error('Sem armazenamento: falta ligar o Upstash Redis ao projecto na Vercel (variáveis KV_REST_API_URL / KV_REST_API_TOKEN).');
+}
+
 async function save(db: DB) {
+  if (redis) { await redis.set(KEY, db); return; }
+  if (process.env.VERCEL) semArmazenamento();
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   const tmp = FILE + '.tmp';
   await fs.writeFile(tmp, JSON.stringify(db, null, 2));
   await fs.rename(tmp, FILE);
 }
+
 async function load(): Promise<DB> {
+  if (redis) {
+    const existente = await redis.get<DB>(KEY);
+    if (existente) return existente;
+    const db = seed();
+    await save(db);
+    return db;
+  }
+  if (process.env.VERCEL) semArmazenamento();
   try { return JSON.parse(await fs.readFile(FILE, 'utf8')) as DB; }
   catch { const db = seed(); await save(db); return db; }
 }
