@@ -53,7 +53,7 @@ export default function ModalBalanco({
                 download
                 className="flex h-11 items-center rounded-xl bg-emerald-600 px-5 text-base font-semibold text-white hover:bg-emerald-700 active:opacity-90"
               >
-                Exportar Excel
+                Excel
               </a>
             )}
             <button

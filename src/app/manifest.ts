@@ -1,19 +1,18 @@
-import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'SGT - Descargas',
-    short_name: 'Descargas',
-    description: 'Gestão de descargas, balança e confirmações',
-    start_url: '/',
-    scope: '/',
-    display: 'standalone',
-    background_color: '#0f172a',
-    theme_color: '#0f172a',
+    name: "Descargas",
+    short_name: "Descargas",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#0f172a",
     icons: [
-      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }
