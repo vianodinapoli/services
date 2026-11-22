@@ -45,7 +45,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string }
   return (
     <>
       {/* Barra superior (mobile) */}
-      <div className="flex h-14 items-center gap-3 border-b border-nitro-100 bg-white px-4 text-slate-800 md:hidden">
+      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-nitro-100 bg-white px-4 text-slate-800 md:hidden" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
         <button onClick={() => setAberto(true)} aria-label="Abrir menu" className="flex h-11 w-11 items-center justify-center rounded-lg border border-nitro-100 text-nitro-700">
           <Icon name="menu" />
         </button>
@@ -56,6 +56,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string }
       {aberto && <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setAberto(false)} />}
 
       <aside
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-nitro-100 bg-white transition-transform
           md:sticky md:top-0 md:h-screen md:translate-x-0 md:transition-[width] ${recolhida ? 'md:w-16' : 'md:w-64'}
           ${aberto ? 'translate-x-0' : '-translate-x-full'}`}
