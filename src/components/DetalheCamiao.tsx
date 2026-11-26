@@ -44,7 +44,7 @@ export default function DetalheCamiao({
     { rotulo: 'Transportadora', valor: String(c.transportadora ?? '—') },
     { rotulo: 'Atrelado', valor: c.tipo_atrelado ? (c.tipo_atrelado === 'link' ? 'Link' : 'Normal') : '—' },
     { rotulo: 'Sacos', valor: String(c.total_sacos ?? '—') },
-    { rotulo: 'Peso estimado', valor: `${fmt(c.peso_total_estimado, 1)} t` },
+    { rotulo: 'Peso estimado', valor: `${fmt(c.peso_total_estimado, 0)} kg` },
   ];
 
   return (
