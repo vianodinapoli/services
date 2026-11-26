@@ -1,20 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageLoader, Spinner } from '@/components/loaders';
 
-const input =
-  'h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base focus:border-nitro-500 focus:outline-none focus:ring-2 focus:ring-nitro-200';
+/** Cor de destaque. Para mudar a identidade, altere só estas linhas. */
+const MARCA = {
+  '--marca': '#C8281E',
+  '--marca-escuro': '#8E1B14',
+} as CSSProperties;
+
+/** Textos sobre a foto. Cada item do nome é uma linha. Para mudar, altere só aqui. */
+const NOME_SISTEMA = ['Sistema de', 'Gestão de', 'Descargas', 'e Terminais'];
+const FUNCOES = [
+  'Camiões em tempo real',
+  
+  'Controlo do plano da operação',
+];
+
+/** Crédito no fundo do painel. */
+const CREDITO = 'Desenvolvido pela FEM';
 
 const SHIP_IMG =
   'https://plus.unsplash.com/premium_photo-1661879449050-069f67e200bd?fm=jpg&q=70&w=2000&auto=format&fit=crop';
+
+/** Campo grande para toque: só a linha de baixo, que fica colorida quando está activo. */
+const campo =
+  'h-16 w-full border-0 border-b-2 border-zinc-200 bg-transparent px-0 text-xl text-zinc-900 placeholder:text-zinc-300 ' +
+  'transition-colors focus:border-[var(--marca)] focus:outline-none focus:ring-0 disabled:opacity-50';
+
+const rotulo = 'mb-1 block text-base font-medium text-zinc-500';
+
+function IconeOlho({ aberto }: { aberto: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {!aberto && <path d="m4 4 16 16" />}
+    </svg>
+  );
+}
+
+function IconeVisto() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-white" aria-hidden="true">
+      <path d="m5 12 5 5 9-10" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [erro, setErro] = useState('');
   const [busy, setBusy] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [verSenha, setVerSenha] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,81 +87,120 @@ export default function LoginPage() {
     setBusy(false);
   }
 
-    return (
-    <main className="relative flex min-h-screen overflow-hidden bg-nitro-950">
-      {/* Navio no fundo, em toda a página */}
+  return (
+    <main
+      style={MARCA}
+      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-black p-6 landscape:items-stretch landscape:justify-end landscape:p-0"
+    >
+      <style>{`
+        @keyframes entrar { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        @keyframes entrar-lado { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+        .entrar { animation: entrar 480ms cubic-bezier(.2,.7,.2,1) both; }
+        @media (orientation: landscape) { .entrar { animation-name: entrar-lado; } }
+        @media (prefers-reduced-motion: reduce) { .entrar { animation: none; } }
+      `}</style>
+
+      {/* Foto do navio: fundo em ecrã inteiro, nas duas orientações */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={SHIP_IMG} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      {/* Véu verde: mais forte à esquerda (texto), mais leve à direita */}
-      <div className="absolute inset-0 bg-gradient-to-r from-nitro-950/85 via-nitro-900/45 to-nitro-900/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-nitro-950/60 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-black/45 landscape:bg-gradient-to-t landscape:from-black/85 landscape:via-black/30 landscape:to-black/10" />
 
-      <section className="relative z-10 hidden flex-1 flex-col justify-between p-12 text-white lg:flex">
-        <div className="flex items-center gap-4">
-          <img src="/nitro-logo.png" alt="Nitro S.A" className="h-16 w-16 object-contain drop-shadow-lg" />
-          <div>
-            <div className="font-display text-2xl font-bold tracking-wide">SGT - GRUPO FEM</div>
-            <div className="mt-1 text-xs uppercase tracking-[2px] text-nitro-200">APP - Sistema de Gestão de terminal</div>
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-5 h-1 w-14 rounded bg-nitro-400" />
-          <h2 className="font-display text-4xl font-extrabold leading-tight">Descarga de navios</h2>
-          <ul className="mt-4 max-w-md space-y-2 text-nitro-100/90">
-  {[
-    'Registo de camiões em tempo real',
-    'Assinatura digital do motorista',
-    'Controlo do plano da operação',
-  ].map((t) => (
-    <li key={t} className="flex items-center gap-3">
-      <span className="h-2 w-2 rounded-full bg-nitro-400" />
-      {t}
-    </li>
-  ))}
-</ul>
-        </div>
-
-        <div className="text-xs text-nitro-200/80">Acesso reservado a utilizadores autorizados</div>
-      </section>
-
-      <section className="relative z-10 flex flex-1 items-center justify-center p-6">
-        <form
-          onSubmit={onSubmit}
-          className="w-full max-w-md space-y-5 rounded-2xl border border-white/40 bg-white/95 p-8 shadow-2xl backdrop-blur-sm"
+      {/* Texto sobre a foto (só na horizontal): alinhado à esquerda, em baixo */}
+      <div className="absolute inset-y-0 left-0 right-[30rem] z-10 hidden flex-col items-start justify-end p-10 text-left text-white landscape:flex xl:p-14">
+        <h2
+          className="font-display font-extrabold leading-[0.95] tracking-tight"
+          style={{ fontSize: 'clamp(2rem, 4vw, 4.5rem)' }}
         >
-          <div>
-            <img src="/nitro-logo.png" alt="Nitro S.A" className="mb-4 h-16 w-16 object-contain lg:hidden" />
-            <div className="mb-3 hidden h-1 w-10 rounded bg-nitro-500 lg:block" />
-            <h1 className="font-display text-2xl font-bold text-nitro-900">Entrar</h1>
-            <p className="mt-1 text-sm text-gray-500">Use a sua conta do sistema para registar camiões.</p>
-          </div>
+          {NOME_SISTEMA.map((linha) => (
+            <span key={linha} className="block">
+              {linha}
+            </span>
+          ))}
+        </h2>
+        <div className="mt-6 h-1.5 w-20 rounded-full bg-[var(--marca)]" />
+        <ul className="mt-6 space-y-3 text-lg font-medium xl:text-xl">
+          {FUNCOES.map((t) => (
+            <li key={t} className="flex items-center gap-3">
+              <IconeVisto />
+              {t}
+            </li>
+          ))}
+        </ul>
+      </div>
 
-          {erro && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{erro}</p>}
+      {/* Vertical: cartão centrado por cima da foto. Horizontal: painel encostado à direita, altura total. */}
+      <form
+        onSubmit={onSubmit}
+        className="entrar relative z-10 flex w-full max-w-lg flex-col justify-center gap-8 overflow-y-auto rounded-[2rem] bg-white p-10 shadow-2xl sm:p-12 landscape:max-w-[30rem] landscape:gap-6 landscape:rounded-none landscape:rounded-l-[2.5rem] landscape:px-14 landscape:py-10"
+      >
+        <div className="flex flex-col items-center text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/nitro-logo.png" alt="Nitro" className="h-20 w-auto object-contain" />
+          <h1 className="font-display mt-8 text-4xl font-extrabold tracking-tight text-zinc-950">Entrar</h1>
+          <p className="mt-2 text-lg text-zinc-500">Use a sua conta para aceder ao sistema.</p>
+        </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-nitro-700">Email</span>
-            <input name="email" type="email" required autoComplete="username" disabled={busy} className={input} />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-nitro-700">Palavra-passe</span>
-            <input name="password" type="password" required autoComplete="current-password" disabled={busy} className={input} />
-          </label>
+        {erro && (
+          <p role="alert" className="border-l-4 border-[var(--marca)] bg-red-50 py-3 pl-4 pr-3 text-base font-medium text-red-900">
+            {erro}
+          </p>
+        )}
 
-          <button
+        <label className="block">
+          <span className={rotulo}>Email</span>
+          <input
+            name="email"
+            type="email"
+            inputMode="email"
+            required
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             disabled={busy}
-            className="flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-nitro-600 text-lg font-semibold text-white shadow-sm transition-colors hover:bg-nitro-700 focus:outline-none focus:ring-2 focus:ring-nitro-300 disabled:opacity-70"
-          >
-            {busy ? (
-              <>
-                <Spinner /> A entrar...
-              </>
-            ) : (
-              'Entrar'
-            )}
-          </button>
-        </form>
-      </section>
+            placeholder="nome@empresa.co.mz"
+            className={campo}
+          />
+        </label>
+
+        <label className="block">
+          <span className={rotulo}>Palavra-passe</span>
+          <span className="relative block">
+            <input
+              name="password"
+              type={verSenha ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={busy}
+              className={`${campo} pr-14`}
+            />
+            <button
+              type="button"
+              onClick={() => setVerSenha((v) => !v)}
+              aria-label={verSenha ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'}
+              className="absolute right-0 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-400 active:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--marca)]"
+            >
+              <IconeOlho aberto={verSenha} />
+            </button>
+          </span>
+        </label>
+
+        <button
+          disabled={busy}
+          className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-[var(--marca)] text-xl font-semibold text-white transition-colors active:bg-[var(--marca-escuro)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--marca)]/30 disabled:opacity-70"
+        >
+          {busy && <Spinner />}
+          {busy ? 'A entrar...' : 'Entrar'}
+        </button>
+
+        <div className="space-y-1 text-center">
+          <p className="text-sm text-zinc-400">Acesso reservado a utilizadores autorizados</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">{CREDITO}</p>
+        </div>
+      </form>
 
       {redirecting && <PageLoader fullscreen text="A entrar" sub="A preparar o seu painel" />}
     </main>

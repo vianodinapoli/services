@@ -19,28 +19,64 @@ type SP = Record<string, string | undefined>;
 // rd e rf (relatório) ficam de fora de propósito: não devem ir para a lista.
 const CHAVES = ['q', 'st', 'tr', 'at', 'de', 'ate', 'pp'];
 
-const campo =
-  'h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-900 placeholder:text-slate-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-red-200 md:h-14';
+/* ---------- Sistema de estilos (apenas slate + accent; verde/âmbar só para estado) ---------- */
 
-const rotuloCampo = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm';
+const focoVisivel =
+  'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 focus-visible:border-accent';
+
+const campo =
+  'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 shadow-sm placeholder:text-slate-400 ' +
+  `transition-colors hover:border-slate-300 focus:border-accent focus:outline-none focus:ring-4 focus:ring-red-100 md:h-14`;
+
+const rotuloCampo = 'mb-1.5 block text-sm font-medium text-slate-600';
 
 const cartao = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
 
-const tituloSecao = 'font-display text-sm font-bold uppercase tracking-wider text-slate-500 md:text-base';
-
 const botaoEscuro =
-  'h-12 shrink-0 rounded-xl bg-slate-900 px-6 text-base font-semibold text-white hover:bg-slate-800 active:opacity-90 md:h-14 md:px-8';
+  `h-12 shrink-0 rounded-xl bg-accent px-6 text-base font-semibold text-white transition hover:opacity-90 active:scale-[0.98] md:h-14 md:px-8 ${focoVisivel}`;
 
 const botaoPagina =
-  'flex h-12 items-center rounded-xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 md:h-14 md:px-7';
+  `flex h-12 items-center rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] md:h-14 md:px-7 ${focoVisivel}`;
 
 const botaoPaginaOff =
-  'flex h-12 items-center rounded-xl border border-slate-200 px-5 text-base text-slate-300 md:h-14 md:px-7';
+  'flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-5 text-base text-slate-300 md:h-14 md:px-7';
+
+const semBarra = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+function Titulo({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <h2 className="font-display flex items-center gap-3 text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+        <span className="h-6 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+        {children}
+      </h2>
+      {aside}
+    </div>
+  );
+}
+
+function IconeLupa() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
 
 /** Camião com um reboque (atrelado normal) ou com dois reboques (atrelado link). */
 function IconeCamiao({ tipo, tamanho = 20 }: { tipo?: string | null; tamanho?: number }) {
   const link = tipo === 'link';
-  const cor = link ? 'text-red-600' : tipo === 'normal' ? 'text-blue-700' : 'text-slate-400';
+  const cor = link ? 'text-accent' : tipo === 'normal' ? 'text-slate-700' : 'text-slate-400';
   const texto = link ? 'Atrelado link' : tipo === 'normal' ? 'Atrelado normal' : 'Atrelado não definido';
   const largura = link ? Math.round((tamanho * 38) / 24) : tamanho;
 
@@ -85,6 +121,8 @@ function IconeCamiao({ tipo, tamanho = 20 }: { tipo?: string | null; tamanho?: n
     </svg>
   );
 }
+
+const numero = 'font-sans font-bold tabular-nums tracking-tight';
 
 function paginas(atual: number, ultima: number): (number | '...')[] {
   const out: (number | '...')[] = [];
@@ -145,6 +183,7 @@ export default async function OperacaoPage({
   };
 
   const pct = op.esperado_ton > 0 ? Math.min(100, Math.round((op.recebido_ton / op.esperado_ton) * 1000) / 10) : 0;
+  const faltam = Math.max(0, op.esperado_ton - op.recebido_ton);
   const { meta, contagens } = lista;
   const filtrosAvancados = !!(sp.tr || sp.at || sp.de || sp.ate);
   const filtrado = !!(sp.q || sp.st || filtrosAvancados);
@@ -169,6 +208,8 @@ export default async function OperacaoPage({
     timeStyle: 'short',
   });
 
+  const pendentes = op.pendentes_count > 0;
+
   return (
     <>
       <PageHeader title={op.navio} subtitle={op.empresa} back="/operacoes" />
@@ -182,64 +223,100 @@ export default async function OperacaoPage({
         href={`${base}/novo`}
         scroll={false}
         aria-label="Registar novo camião"
-        className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-2 rounded-full bg-accent px-6 text-base font-semibold text-white shadow-lg hover:opacity-95 active:opacity-90 md:bottom-8 md:right-8 md:h-16 md:px-8 md:text-lg"
+        className={`fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-accent px-5 text-base font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:opacity-95 active:scale-95 sm:px-6 md:bottom-8 md:right-8 md:h-16 md:px-8 md:text-lg ${focoVisivel}`}
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <Icon name="plus" />
         <span className="hidden sm:inline">Registar novo camião</span>
       </Link>
 
-      <div className="space-y-8 px-4 pt-6 pb-32 md:pt-8 md:space-y-10 md:px-8 xl:px-10">
+      <div className="mx-auto w-full max-w-[1600px] space-y-10 px-4 pb-32 pt-6 md:space-y-12 md:px-8 md:pt-10 xl:px-10">
         {/* Resumo */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className={`${cartao} p-4`}>
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recebido</div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-                {fmt(op.recebido_ton, 1)} t
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className={`${cartao} col-span-2 p-4 md:p-5`}>
+            <div className="text-sm font-medium text-slate-600 md:text-base">Recebido</div>
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className={`${numero} text-3xl text-slate-900 md:text-4xl`}>{fmt(op.recebido_ton, 1)} t</span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-slate-700">
+                {pct}%
               </span>
-              <span className="text-sm font-semibold text-slate-500">{pct}%</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]" style={{ width: `${pct}%` }} />
+            <div
+              className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Progresso da operação"
+            >
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
             </div>
-            <div className="mt-1 text-xs text-slate-500">de {fmt(op.esperado_ton, 1)} t esperadas</div>
+            <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm tabular-nums text-slate-600">
+              <span>de {fmt(op.esperado_ton, 1)} t esperadas</span>
+              <span>faltam {fmt(faltam, 1)} t</span>
+            </div>
           </div>
 
-          <div className={`${cartao} p-4`}>
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Por confirmar</div>
-            <div
-              className={`mt-1 text-2xl font-bold tracking-tight md:text-3xl ${op.pendentes_count > 0 ? 'text-amber-600' : 'text-slate-900'}`}
-            >
+          <div className={`${cartao} flex flex-col justify-between p-4 md:p-5`}>
+            <div className="text-sm font-medium text-slate-600 md:text-base">Por confirmar</div>
+            <div className={`${numero} mt-1 text-3xl md:text-4xl ${pendentes ? 'text-amber-600' : 'text-slate-900'}`}>
               {op.pendentes_count}
             </div>
-            <div className="mt-2 text-xs text-slate-500">
-              {op.pendentes_count > 0 ? 'a aguardar confirmação' : 'tudo confirmado'}
+            <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${pendentes ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                aria-hidden="true"
+              />
+              {pendentes ? 'A aguardar confirmação' : 'Tudo confirmado'}
+            </div>
+          </div>
+
+          <div className={`${cartao} flex flex-col justify-between p-4 md:p-5`}>
+            <div className="text-sm font-medium text-slate-600 md:text-base">Confirmados</div>
+            <div className={`${numero} mt-1 text-3xl text-slate-900 md:text-4xl`}>{contagens.confirmed}</div>
+            <div className="mt-2 text-sm text-slate-600">
+              de {contagens.todos} {contagens.todos === 1 ? 'camião' : 'camiões'}
             </div>
           </div>
         </div>
 
         {/* Plano por produto */}
-        <section className="space-y-3">
-          <h2 className={tituloSecao}>Plano por produto</h2>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+        <section className="space-y-4">
+          <Titulo>Plano por produto</Titulo>
+          <div
+            className={`-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-3 2xl:grid-cols-4 ${semBarra}`}
+          >
             {op.items.map((it) => {
-              const p = it.plano > 0 ? Math.min(100, Math.round((it.registado / it.plano) * 100)) : 0;
+              const p = it.plano > 0 ? Math.min(100, Math.round((it.registado / it.plano) * 1000) / 10) : 0;
+              const barra = it.registado > 0 ? Math.max(p, 1.5) : 0; // sempre visível quando há registo
               return (
-                <div key={it.id} className={`${cartao} min-w-[220px] flex-1 p-4`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-base font-bold text-slate-900">{it.nome}</span>
-                    <span className="whitespace-nowrap text-sm font-semibold text-slate-700">
-                      {fmt(it.registado)} / {fmt(it.plano)} {it.unidade_label}
+                <div
+                  key={it.id}
+                  className={`${cartao} min-w-[240px] shrink-0 snap-start p-4 md:min-w-0 md:p-5`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-base font-semibold leading-snug text-slate-900">{it.nome}</span>
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-sm font-semibold tabular-nums text-slate-700">
+                      {p}%
                     </span>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#1a56db] to-[#0dcaf0]"
-                      style={{ width: `${p}%` }}
-                    />
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
+                    <span className="text-2xl font-bold tracking-tight text-slate-900">{fmt(it.registado)}</span>
+                    <span className="text-base text-slate-500">
+                      / {fmt(it.plano)} {it.unidade_label}
+                    </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <div
+                    className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"
+                    role="progressbar"
+                    aria-valuenow={p}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Progresso de ${it.nome}`}
+                  >
+                    <div className="h-full rounded-full bg-accent" style={{ width: `${barra}%` }} />
+                  </div>
+                  <p className="mt-2 text-sm tabular-nums text-slate-600">
                     Saldo: {fmt(it.saldo)} {it.unidade_label}
                   </p>
                 </div>
@@ -250,7 +327,7 @@ export default async function OperacaoPage({
 
         {/* Relatório de confirmados */}
         <section className="space-y-4">
-          <h2 className={tituloSecao}>Relatório de confirmados</h2>
+          <Titulo>Relatório de confirmados</Titulo>
           <div className={`${cartao} p-5 md:p-8`}>
             <form
               method="get"
@@ -270,10 +347,15 @@ export default async function OperacaoPage({
             </form>
 
             {erroRelatorio && (
-              <p className="mt-5 rounded-xl bg-red-50 p-4 text-base text-red-700">{erroRelatorio}</p>
+              <p
+                role="alert"
+                className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-base text-red-700"
+              >
+                {erroRelatorio}
+              </p>
             )}
 
-                       {relatorio && (
+            {relatorio && (
               <ModalBalanco
                 fecharHref={href({ rd: undefined, rf: undefined })}
                 excelHref={`/api/laravel/operations/${id}/reports/confirmed?de=${encodeURIComponent(sp.rd!)}&ate=${encodeURIComponent(sp.rf!)}&formato=xlsx`}
@@ -293,51 +375,80 @@ export default async function OperacaoPage({
 
         {/* Camiões */}
         <section className="space-y-5">
-          <h2 className={tituloSecao}>Camiões</h2>
+          <Titulo>Camiões</Titulo>
 
-          <div className="flex flex-wrap gap-3">
+          {/* Separadores: numa linha com scroll no telemóvel, quebram linha a partir do tablet */}
+          <nav
+            aria-label="Filtrar por estado"
+            className={`-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 ${semBarra}`}
+          >
             {abas.map((a) => {
               const ativa = (sp.st ?? '') === a.valor;
               return (
                 <Link
                   key={a.valor || 'todos'}
                   href={href({ st: a.valor || undefined, pagina: undefined })}
-                  className={`flex h-12 items-center gap-2 rounded-full border px-5 text-base font-semibold transition md:h-14 md:px-7 ${
+                  aria-current={ativa ? 'page' : undefined}
+                  className={`flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-base font-medium transition active:scale-[0.97] md:h-12 md:px-5 ${focoVisivel} ${
                     ativa
-                      ? 'border-accent bg-accent text-white'
-                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
+                      ? 'border-accent bg-accent text-white shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50'
                   }`}
                 >
                   {a.rotulo}
-                  <span className={`text-sm ${ativa ? 'text-white/80' : 'text-slate-500'}`}>{a.n}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                      ativa ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {a.n}
+                  </span>
                 </Link>
               );
             })}
-          </div>
+          </nav>
 
           <form method="get" action={base} className="space-y-4">
             {sp.st && <input type="hidden" name="st" value={sp.st} />}
             {sp.rd && <input type="hidden" name="rd" value={sp.rd} />}
             {sp.rf && <input type="hidden" name="rf" value={sp.rf} />}
             <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                type="search"
-                name="q"
-                defaultValue={sp.q}
-                placeholder="Pesquisar matrícula, motorista ou guia"
-                className={campo}
-              />
+              <div className="relative flex-1">
+                <IconeLupa />
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={sp.q}
+                  placeholder="Pesquisar matrícula, motorista ou guia"
+                  aria-label="Pesquisar camiões"
+                  className={`${campo} pl-12`}
+                />
+              </div>
               <button className={botaoEscuro}>Pesquisar</button>
             </div>
 
-            <details className="group rounded-2xl border border-slate-200 bg-white p-5" open={filtrosAvancados}>
-              <summary className="flex min-h-12 cursor-pointer items-center text-base font-semibold text-slate-700">
-                Mais filtros
-                <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-                  (transportadora, atrelado, datas)
+            <details className={`group ${cartao} px-4 py-2 md:px-5`} open={filtrosAvancados}>
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-base font-medium text-slate-700 [&::-webkit-details-marker]:hidden">
+                <span>
+                  Mais filtros
+                  <span className="ml-2 hidden text-sm font-normal text-slate-500 group-open:hidden sm:inline">
+                    Transportadora, atrelado e datas
+                  </span>
                 </span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5 text-slate-400 transition-transform group-open:rotate-180"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
               </summary>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+              <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pb-3 pt-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
                 <label className="block">
                   <span className={rotuloCampo}>Transportadora</span>
                   <select name="tr" defaultValue={sp.tr ?? ''} className={campo}>
@@ -371,35 +482,36 @@ export default async function OperacaoPage({
             {filtrado && (
               <Link
                 href={base}
-                className="inline-flex h-12 items-center text-base font-semibold text-accent underline"
+                className={`inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-5 text-base font-medium text-accent shadow-sm transition hover:bg-slate-50 active:scale-[0.98] ${focoVisivel}`}
               >
-                Limpar todos os filtros
+                Limpar filtros
               </Link>
             )}
           </form>
 
-          <p className="text-base text-slate-600">
-            {meta.total === 0
-              ? filtrado
-                ? 'Nenhum camião corresponde aos filtros.'
-                : 'Ainda não há camiões registados.'
-              : `A mostrar ${de}–${ate} de ${meta.total}`}
-          </p>
-
-          {/* Legenda dos ícones */}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm font-medium text-slate-600 md:text-base">
-            <span className="flex items-center gap-2">
-              <IconeCamiao tipo="normal" tamanho={22} />
-              Atrelado normal
-            </span>
-            <span className="flex items-center gap-2">
-              <IconeCamiao tipo="link" tamanho={22} />
-              Atrelado link
-            </span>
+          {/* Contagem e legenda dos ícones */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-base tabular-nums text-slate-600" aria-live="polite">
+              {meta.total === 0
+                ? filtrado
+                  ? 'Nenhum camião corresponde aos filtros.'
+                  : 'Ainda não há camiões registados.'
+                : `A mostrar ${de}–${ate} de ${meta.total}`}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
+              <span className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+                <IconeCamiao tipo="normal" tamanho={20} />
+                Atrelado normal
+              </span>
+              <span className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+                <IconeCamiao tipo="link" tamanho={20} />
+                Atrelado link
+              </span>
+            </div>
           </div>
 
           {/* Camiões: uma linha por camião, empilhadas */}
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {lista.data.map((d) => (
               <LinhaCamiao
                 key={d.id}
@@ -412,42 +524,53 @@ export default async function OperacaoPage({
 
           {/* Paginação */}
           {meta.ultima > 1 && (
-            <nav aria-label="Paginação" className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <nav aria-label="Paginação" className="flex flex-wrap items-center justify-center gap-2 pt-4 sm:gap-3">
               {meta.pagina > 1 ? (
                 <Link href={href({ pagina: String(meta.pagina - 1) })} className={botaoPagina}>
                   Anterior
                 </Link>
               ) : (
-                <span className={botaoPaginaOff}>Anterior</span>
+                <span className={botaoPaginaOff} aria-disabled="true">
+                  Anterior
+                </span>
               )}
 
-              {paginas(meta.pagina, meta.ultima).map((n, i) =>
-                n === '...' ? (
-                  <span key={`e${i}`} className="px-1 text-slate-400">
-                    ...
-                  </span>
-                ) : (
-                  <Link
-                    key={n}
-                    href={href({ pagina: n === 1 ? undefined : String(n) })}
-                    aria-current={n === meta.pagina ? 'page' : undefined}
-                    className={`flex h-12 min-w-12 items-center justify-center rounded-xl border px-3 text-base font-semibold md:h-14 md:min-w-14 ${
-                      n === meta.pagina
-                        ? 'border-accent bg-accent text-white shadow-sm'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100'
-                    }`}
-                  >
-                    {n}
-                  </Link>
-                ),
-              )}
+              {/* Telemóvel: só "x / y". A partir de sm: números. */}
+              <span className="px-2 text-base font-medium tabular-nums text-slate-600 sm:hidden">
+                {meta.pagina} / {meta.ultima}
+              </span>
+
+              <div className="hidden items-center gap-2 sm:flex sm:gap-3">
+                {paginas(meta.pagina, meta.ultima).map((n, i) =>
+                  n === '...' ? (
+                    <span key={`e${i}`} className="px-1 text-slate-400" aria-hidden="true">
+                      …
+                    </span>
+                  ) : (
+                    <Link
+                      key={n}
+                      href={href({ pagina: n === 1 ? undefined : String(n) })}
+                      aria-current={n === meta.pagina ? 'page' : undefined}
+                      className={`flex h-12 min-w-12 items-center justify-center rounded-xl border px-3 text-base font-medium tabular-nums transition active:scale-[0.97] md:h-14 md:min-w-14 ${focoVisivel} ${
+                        n === meta.pagina
+                          ? 'border-accent bg-accent text-white shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50'
+                      }`}
+                    >
+                      {n}
+                    </Link>
+                  ),
+                )}
+              </div>
 
               {meta.pagina < meta.ultima ? (
                 <Link href={href({ pagina: String(meta.pagina + 1) })} className={botaoPagina}>
                   Seguinte
                 </Link>
               ) : (
-                <span className={botaoPaginaOff}>Seguinte</span>
+                <span className={botaoPaginaOff} aria-disabled="true">
+                  Seguinte
+                </span>
               )}
             </nav>
           )}
