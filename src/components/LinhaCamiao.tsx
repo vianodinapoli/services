@@ -247,8 +247,8 @@ export default function LinhaCamiao({
           <div className="text-sm font-semibold text-slate-900">{d.total_sacos}</div>
         </div>
 
-        <div className="w-20 shrink-0 text-right md:w-24">
-          <div className="text-lg font-bold tracking-tight text-slate-900">{fmt(d.peso_total_estimado, 1)} t</div>
+        <div className="w-24 shrink-0 text-right md:w-28">
+          <div className="text-lg font-bold tracking-tight text-slate-900">{fmt(d.peso_total_estimado, 0)} kg</div>
           <div className="text-xs font-medium text-slate-500">estimado</div>
         </div>
 
