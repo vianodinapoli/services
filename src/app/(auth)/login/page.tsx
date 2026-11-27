@@ -24,12 +24,13 @@ const CREDITO = 'Desenvolvido pela FEM';
 const SHIP_IMG =
   'https://plus.unsplash.com/premium_photo-1661879449050-069f67e200bd?fm=jpg&q=70&w=2000&auto=format&fit=crop';
 
-/** Campo grande para toque: só a linha de baixo, que fica colorida quando está activo. */
+/** Campo grande para toque: só a linha de baixo, que fica colorida quando está activo. Mais baixo na horizontal. */
 const campo =
   'h-16 w-full border-0 border-b-2 border-zinc-200 bg-transparent px-0 text-xl text-zinc-900 placeholder:text-zinc-300 ' +
-  'transition-colors focus:border-[var(--marca)] focus:outline-none focus:ring-0 disabled:opacity-50';
+  'transition-colors focus:border-[var(--marca)] focus:outline-none focus:ring-0 disabled:opacity-50 ' +
+  'landscape:h-12 landscape:text-lg';
 
-const rotulo = 'mb-1 block text-base font-medium text-zinc-500';
+const rotulo = 'mb-1 block text-base font-medium text-zinc-500 landscape:mb-0 landscape:text-sm';
 
 function IconeOlho({ aberto }: { aberto: boolean }) {
   return (
@@ -90,7 +91,7 @@ export default function LoginPage() {
   return (
     <main
       style={MARCA}
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-black p-6 landscape:items-stretch landscape:justify-end landscape:p-0"
+      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-black p-6 landscape:h-dvh landscape:min-h-0 landscape:items-stretch landscape:justify-end landscape:p-0"
     >
       <style>{`
         @keyframes entrar { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
@@ -128,20 +129,24 @@ export default function LoginPage() {
         </ul>
       </div>
 
-      {/* Vertical: cartão centrado por cima da foto. Horizontal: painel encostado à direita, altura total. */}
+      {/* Vertical: cartão centrado por cima da foto. Horizontal: painel encostado à direita, com a altura do ecrã e compacto. */}
       <form
         onSubmit={onSubmit}
-        className="entrar relative z-10 flex w-full max-w-lg flex-col justify-center gap-8 overflow-y-auto rounded-[2rem] bg-white p-10 shadow-2xl sm:p-12 landscape:max-w-[30rem] landscape:gap-6 landscape:rounded-none landscape:rounded-l-[2.5rem] landscape:px-14 landscape:py-10"
+        className="entrar relative z-10 flex w-full max-w-lg flex-col justify-center gap-8 overflow-y-auto rounded-[2rem] bg-white p-10 shadow-2xl sm:p-12 landscape:max-h-dvh landscape:max-w-[30rem] landscape:gap-4 landscape:rounded-none landscape:rounded-l-[2.5rem] landscape:px-12 landscape:py-6"
       >
         <div className="flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/nitro-logo.png" alt="Nitro" className="h-20 w-auto object-contain" />
-          <h1 className="font-display mt-8 text-4xl font-extrabold tracking-tight text-zinc-950">Entrar</h1>
-          <p className="mt-2 text-lg text-zinc-500">Use a sua conta para aceder ao sistema.</p>
+          <img src="/nitro-logo.png" alt="Nitro" className="h-20 w-auto object-contain landscape:h-12" />
+          <h1 className="font-display mt-8 text-4xl font-extrabold tracking-tight text-zinc-950 landscape:mt-3 landscape:text-3xl">
+            Entrar
+          </h1>
+          <p className="mt-2 text-lg text-zinc-500 landscape:mt-1 landscape:text-base">
+            Use a sua conta para aceder ao sistema.
+          </p>
         </div>
 
         {erro && (
-          <p role="alert" className="border-l-4 border-[var(--marca)] bg-red-50 py-3 pl-4 pr-3 text-base font-medium text-red-900">
+          <p role="alert" className="border-l-4 border-[var(--marca)] bg-red-50 py-3 pl-4 pr-3 text-base font-medium text-red-900 landscape:py-2 landscape:text-sm">
             {erro}
           </p>
         )}
@@ -190,15 +195,15 @@ export default function LoginPage() {
 
         <button
           disabled={busy}
-          className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-[var(--marca)] text-xl font-semibold text-white transition-colors active:bg-[var(--marca-escuro)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--marca)]/30 disabled:opacity-70"
+          className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-[var(--marca)] text-xl font-semibold text-white transition-colors active:bg-[var(--marca-escuro)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--marca)]/30 disabled:opacity-70 landscape:h-14 landscape:text-lg"
         >
           {busy && <Spinner />}
           {busy ? 'A entrar...' : 'Entrar'}
         </button>
 
-        <div className="space-y-1 text-center">
-          <p className="text-sm text-zinc-400">Acesso reservado a utilizadores autorizados</p>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">{CREDITO}</p>
+        <div className="space-y-1 text-center landscape:space-y-0.5">
+          <p className="text-sm text-zinc-400 landscape:text-xs">Acesso reservado a utilizadores autorizados</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400 landscape:text-[11px]">{CREDITO}</p>
         </div>
       </form>
 
