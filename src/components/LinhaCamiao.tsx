@@ -149,6 +149,9 @@ export default function LinhaCamiao({
 
   const horaBase = horaMaputo(d.carregado_em) ?? d.hora_saida_porto;
 
+  // Tipo de atrelado (só mostrado como etiqueta no telemóvel)
+  const tipoLabel = d.tipo_atrelado ? (d.tipo_atrelado === 'link' ? 'Link' : 'Normal') : '';
+
   // Atraso até à balança (calculado no Laravel: nivelAtraso). Carregado ainda não tem atraso.
   const {
     nivel_atraso: nivel,
@@ -185,40 +188,64 @@ export default function LinhaCamiao({
           transition: arrastando ? 'none' : 'transform 200ms ease',
           touchAction: podeDeslizar ? 'pan-y' : undefined,
         }}
-        className={`relative flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm md:gap-4 md:px-4 ${
+        className={`relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm md:flex-nowrap md:gap-4 md:px-4 md:py-2 ${
           podeDeslizar ? 'select-none' : ''
         } ${ocupado ? 'opacity-70' : ''}`}
       >
-        <div className="flex h-12 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100">{icone}</div>
+        {/* Ícone do camião (+ etiqueta Link/Normal só no telemóvel) */}
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 md:w-14">{icone}</div>
+          {tipoLabel && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 md:hidden">
+              {tipoLabel}
+            </span>
+          )}
+        </div>
 
+        {/* Identificação */}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-lg font-bold tracking-tight text-slate-900">{d.matricula}</span>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[d.status]}`}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="whitespace-nowrap text-xl font-bold tracking-tight text-slate-900 md:text-lg">
+              {d.matricula}
+            </span>
+            <span
+              className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[d.status]}`}
+            >
               {STATUS_LABEL[d.status]}
             </span>
             {corAtraso && (
-              <span className="flex items-center gap-1.5" title={textoAtraso}>
+              <span className="flex items-center gap-1.5 whitespace-nowrap" title={textoAtraso}>
                 <span
                   role="img"
                   aria-label={textoAtraso}
-                  className={`h-3.5 w-3.5 rounded-full shadow ring-2 ring-white ${corAtraso.bg}`}
+                  className={`h-4 w-4 rounded-full shadow ring-2 ring-white md:h-3.5 md:w-3.5 ${corAtraso.bg}`}
                 />
                 {minAtraso != null && minAtraso > 0 && (
-                  <span className="text-xs font-semibold text-slate-600">{minAtraso} min</span>
+                  <span className="text-sm font-semibold text-slate-600 md:text-xs">{minAtraso} min</span>
                 )}
               </span>
             )}
           </div>
-          <p className="truncate text-sm text-slate-600">
+
+          {/* Telemóvel: motorista e transportadora, cada um na sua linha */}
+          <div className="mt-1 md:hidden">
+            <p className="truncate text-[15px] font-semibold text-slate-800">{d.motorista}</p>
+            <p className="truncate text-sm text-slate-500">{d.transportadora}</p>
+          </div>
+
+          {/* Tablet e computador: tudo numa linha */}
+          <p className="hidden truncate text-sm text-slate-600 md:block">
             {d.motorista} · {d.transportadora}
-            <span className="md:hidden"> · Guia {d.numero_guia}</span>
           </p>
+
           {carregado && (
-            <p className="mt-0.5 text-xs font-semibold text-emerald-700">Deslize para a direita: saiu do porto →</p>
+            <p className="mt-1 text-xs font-semibold text-emerald-700 md:mt-0.5">
+              Deslize para a direita: saiu do porto →
+            </p>
           )}
         </div>
 
+        {/* Colunas de tablet e computador */}
         <div className="hidden w-28 shrink-0 md:block">
           <div className="text-xs font-medium text-slate-500">Guia</div>
           <div className="truncate text-sm font-semibold text-slate-900">{d.numero_guia}</div>
@@ -232,46 +259,65 @@ export default function LinhaCamiao({
           </div>
         </div>
 
-        <div className="hidden w-16 shrink-0 text-right sm:block">
+        <div className="hidden w-16 shrink-0 text-right md:block">
           <div className="text-xs font-medium text-slate-500">Sacos</div>
           <div className="text-sm font-semibold text-slate-900">{d.total_sacos}</div>
         </div>
 
-        <div className="w-24 shrink-0 text-right md:w-28">
+        <div className="hidden w-28 shrink-0 text-right md:block">
           <div className="text-lg font-bold tracking-tight text-slate-900">{fmt(d.peso_total_estimado, 0)} kg</div>
-          <div className="text-xs font-medium text-slate-500">estimado</div>
+          <div className="text-xs font-medium text-slate-500">Estimado</div>
         </div>
 
-        {/* Editar: só gestor */}
-        {podeEditar && editarHref && (
-          <Link
-            href={editarHref}
-            scroll={false}
-            aria-label={`Editar camião ${d.matricula}`}
-            title="Editar registo"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5"
-              aria-hidden="true"
+        {/* Botões: empilhados no telemóvel, lado a lado no tablet */}
+        <div className="flex shrink-0 flex-col gap-2 md:flex-row md:gap-4">
+          {/* Editar: só gestor */}
+          {podeEditar && editarHref && (
+            <Link
+              href={editarHref}
+              scroll={false}
+              aria-label={`Editar camião ${d.matricula}`}
+              title="Editar registo"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 md:h-12 md:w-12"
             >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-          </Link>
-        )}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </Link>
+          )}
 
-        <DetalheCamiao
-          camiao={d}
-          href={`/operacoes/${operacaoId}/camioes/${d.id}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-        />
+          <DetalheCamiao
+            camiao={d}
+            href={`/operacoes/${operacaoId}/camioes/${d.id}`}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 md:h-12 md:w-12"
+          />
+        </div>
+
+        {/* Telemóvel: faixa de baixo com Guia, Hora e Sacos */}
+        <dl className="order-last grid w-full grid-cols-3 gap-2 border-t border-slate-100 pt-2 md:hidden">
+          <div className="min-w-0">
+            <dt className="text-[11px] font-medium text-slate-500">Guia</dt>
+            <dd className="truncate text-[15px] font-bold text-slate-900">{d.numero_guia}</dd>
+          </div>
+          <div className="min-w-0 text-center">
+            <dt className="text-[11px] font-medium text-slate-500">Hora</dt>
+            <dd className="text-[15px] font-bold text-slate-900">{horaBase ?? '—'}</dd>
+          </div>
+          <div className="min-w-0 text-right">
+            <dt className="text-[11px] font-medium text-slate-500">Sacos</dt>
+            <dd className="text-[15px] font-bold text-slate-900">{d.total_sacos}</dd>
+          </div>
+        </dl>
       </div>
 
       {erro && (
