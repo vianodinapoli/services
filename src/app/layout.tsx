@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: 'SGL - Descargas',
   appleWebApp: {
     capable: true,
-    title: 'Descargas',
+    title: 'Grupo FEM',
     statusBarStyle: 'default',
   },
   icons: { apple: '/apple-touch-icon.png' },
