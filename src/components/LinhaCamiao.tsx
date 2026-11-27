@@ -147,14 +147,6 @@ export default function LinhaCamiao({
     repor();
   }
 
-  // Os 4 tempos, com a hora do servidor (Maputo)
-  const marcos = [
-    { rotulo: 'Carregado', hora: horaMaputo(d.carregado_em) },
-    { rotulo: 'Saiu do porto', hora: horaMaputo(d.saiu_porto_em) },
-    { rotulo: 'Chegou à balança', hora: horaMaputo(d.chegou_balanca_em) },
-    { rotulo: 'Confirmado', hora: horaMaputo(d.saiu_descarga_em) },
-  ].filter((m) => m.hora);
-
   const horaBase = horaMaputo(d.carregado_em) ?? d.hora_saida_porto;
 
   // Atraso até à balança (calculado no Laravel: nivelAtraso). Carregado ainda não tem atraso.
@@ -162,24 +154,14 @@ export default function LinhaCamiao({
     nivel_atraso: nivel,
     atraso_minutos: minAtraso,
     atraso_motivo: motivoAtraso,
-    observacoes,
-    editado_por_nome: editadoPor,
-    editado_em: editadoEm,
   } = d as Camiao & {
     nivel_atraso?: string | null;
     atraso_minutos?: number | null;
     atraso_motivo?: string | null;
-    observacoes?: string | null;
-    editado_por_nome?: string | null;
-    editado_em?: string | null;
   };
   const corAtraso = nivel ? COR_ATRASO[nivel] : undefined;
   const textoAtraso = corAtraso
     ? `${corAtraso.rotulo}${minAtraso ? ` (${minAtraso} min)` : ''}${motivoAtraso ? `: ${motivoAtraso}` : ''}`
-    : '';
-  const obs = observacoes?.trim() || '';
-  const editadoQuando = editadoEm
-    ? new Date(editadoEm).toLocaleString('pt-PT', { timeZone: 'Africa/Maputo', dateStyle: 'short', timeStyle: 'short' })
     : '';
 
   return (
@@ -232,29 +214,6 @@ export default function LinhaCamiao({
             {d.motorista} · {d.transportadora}
             <span className="md:hidden"> · Guia {d.numero_guia}</span>
           </p>
-          {marcos.length > 0 && (
-            <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500">
-              {marcos.map((m) => (
-                <span key={m.rotulo}>
-                  {m.rotulo} <span className="font-semibold text-slate-700">{m.hora}</span>
-                </span>
-              ))}
-            </p>
-          )}
-          {motivoAtraso && (
-            <p className="mt-0.5 text-xs font-semibold text-red-700">Atraso: {motivoAtraso}</p>
-          )}
-          {obs && (
-            <p className="mt-0.5 truncate text-xs text-slate-600" title={obs}>
-              <span className="font-semibold text-slate-700">Obs.:</span> {obs}
-            </p>
-          )}
-          {editadoPor && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">
-              Editado por <span className="font-semibold text-slate-700">{editadoPor}</span>
-              {editadoQuando ? ` · ${editadoQuando}` : ''}
-            </p>
-          )}
           {carregado && (
             <p className="mt-0.5 text-xs font-semibold text-emerald-700">Deslize para a direita: saiu do porto →</p>
           )}
