@@ -7,6 +7,9 @@ const offline = () =>
     { status: 503 },
   );
 
+// Códigos que o túnel (Cloudflare/Funnel/Tailscale) devolve quando o Laravel está em baixo
+const SERVIDOR_EM_BAIXO = [502, 503, 504, 521, 522, 523, 524, 530];
+
 async function proxy(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -33,8 +36,7 @@ async function proxy(
       signal: AbortSignal.timeout(10000), // não ficar pendurado
     });
 
-    // Funnel/Tailscale devolve 502/503/504 quando o Laravel está em baixo
-    if ([502, 503, 504].includes(res.status)) return offline();
+    if (SERVIDOR_EM_BAIXO.includes(res.status)) return offline();
 
     return new NextResponse(res.body, {
       status: res.status,

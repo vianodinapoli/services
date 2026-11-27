@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SignatureCanvas from 'react-signature-canvas';
 import { fmt, type Operation } from '@/lib/laravel-types';
+import { registarDescarga, listar } from '@/lib/offline';
 import CartaNovaAviso from '@/components/CartaNovaAviso';
 import MatriculaInput from '@/components/MatriculaInput';
 
@@ -23,15 +24,34 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 
 export default function NovaDescargaForm({ operation }: { operation: Operation }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const sig = useRef<SignatureCanvas>(null);
   const [qtys, setQtys] = useState<Record<number, string>>({});
   const [matricula, setMatricula] = useState('');
   const [motorista, setMotorista] = useState('');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [aviso, setAviso] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const err = (k: string) => errors[k]?.[0];
   const hoje = new Date().toLocaleDateString('en-CA');
+
+  // Guarda esta página no tablet para abrir sem rede (a cópia vem do que foi carregado com rede)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready
+      .then((reg) => reg.active?.postMessage({ tipo: 'cachear', urls: [location.pathname + location.search] }))
+      .catch(() => {});
+  }, []);
+
+  function limparFormulario() {
+    formRef.current?.reset();
+    setQtys({});
+    setMatricula('');
+    setMotorista('');
+    setErrors({});
+    sig.current?.clear();
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,12 +65,11 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
     const f = new FormData(e.currentTarget);
     setBusy(true);
     setErrors({});
+    setAviso(null);
 
     try {
-      const res = await fetch('/api/laravel/discharges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const r = await registarDescarga(
+        {
           operation_id: operation.id,
           data: f.get('data'),
           motorista: f.get('motorista'),
@@ -60,31 +79,43 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
           tipo_atrelado: f.get('tipo_atrelado'),
           items: qtys,
           assinatura: sig.current.getCanvas().toDataURL('image/png'),
-        }),
-      });
+          // Hora do toque no tablet: o servidor deve usá-la em vez da hora de recepção
+          carregado_em: new Date().toISOString(),
+        },
+        operation.id,
+        `${f.get('matricula')} · ${f.get('motorista')}`,
+      );
 
-      if (res.status === 401) return router.push('/login');
-      if (res.status === 422) {
-        setErrors((await res.json()).errors ?? {});
+      if (r.r === 'ok') {
+        const msg = encodeURIComponent('Camião registado como carregado. Aguarda a saída do porto.');
+        router.push(`/operacoes/${operation.id}?ok=${msg}`);
+        router.refresh();
         return;
       }
-      if (!res.ok) {
-        setErrors({ geral: ['Falha ao registar. Verifique a ligação e tente novamente.'] });
+
+      if (r.r === 'rejeitado') {
+        setErrors(r.erros ?? { geral: [r.msg ?? 'Dados inválidos.'] });
         return;
       }
 
-      const msg = encodeURIComponent('Camião registado como carregado. Aguarda a saída do porto.');
-      router.push(`/operacoes/${operation.id}?ok=${msg}`);
-      router.refresh();
-    } catch {
-      setErrors({ geral: ['Sem ligação ao servidor. Verifique a rede e tente novamente.'] });
+      if (r.r === 'sessao') {
+        router.push('/login'); // o registo fica guardado e é enviado depois de entrar
+        return;
+      }
+
+      // offline: ficou guardado no tablet
+      const n = (await listar()).filter((i) => i.estado === 'pendente').length;
+      setAviso(`Guardado no tablet (${n} por enviar). Será enviado quando o servidor voltar. Pode registar o próximo camião.`);
+      limparFormulario();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-3xl space-y-5 p-6">
+    <form ref={formRef} onSubmit={onSubmit} className="mx-auto max-w-3xl space-y-5 p-6 pb-28">
+      {aviso && <p className="rounded-lg bg-amber-50 p-3 text-amber-800">{aviso}</p>}
       {err('geral') && <p className="rounded-lg bg-red-50 p-3 text-red-700">{err('geral')}</p>}
 
       <section className={card}>
@@ -92,7 +123,7 @@ export default function NovaDescargaForm({ operation }: { operation: Operation }
         <Field label="Data">
           <input type="date" name="data" defaultValue={hoje} required className={input} suppressHydrationWarning />
         </Field>
-        <p className="text-sm text-gray-500">A hora de carregamento fica registada automaticamente pelo servidor.</p>
+        <p className="text-sm text-gray-500">A hora de carregamento fica registada automaticamente no momento em que carrega em Registar.</p>
       </section>
 
       <section className={card}>

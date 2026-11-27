@@ -5,6 +5,7 @@ import NavProgress from '@/components/NavProgress';
 import FeitoHost from '@/components/FeitoHost';
 import InstalarApp from '@/components/InstalarApp';
 import RegistarSW from '@/components/RegistarSW';
+import SyncStatus from '@/components/SyncStatus';
 
 const dm = DM_Sans({ subsets: ['latin'], variable: '--font-dm' });
 const syne = Syne({ subsets: ['latin'], weight: ['600', '700', '800'], variable: '--font-syne' });
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <FeitoHost />
         <InstalarApp />
         <RegistarSW />
+        <SyncStatus />
       </body>
     </html>
   );
