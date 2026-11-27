@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   jar.set('token', data.token, { ...opts, httpOnly: true });
   jar.set(
     'user',
-    JSON.stringify({ name: data.user?.name ?? '', role: Array.isArray(data.user?.roles) ? data.user.roles[0] ?? '' : '' }),
+    JSON.stringify({ name: data.user?.name ?? '', role: Array.isArray(data.user?.roles) ? data.user.roles[0] ?? '' : '', roles: Array.isArray(data.user?.roles) ? data.user.roles : [] }),
     { ...opts, httpOnly: false },
   );
 

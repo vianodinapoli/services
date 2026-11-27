@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DetalheCamiao from '@/components/DetalheCamiao';
 import FeitoAnimado from '@/components/FeitoAnimado';
@@ -25,10 +26,15 @@ export default function LinhaCamiao({
   camiao: d,
   operacaoId,
   icone,
+  podeEditar = false,
+  editarHref,
 }: {
   camiao: Camiao;
   operacaoId: number;
   icone: ReactNode;
+  /** true só para o role "gestor" (decidido no servidor, em page.tsx). */
+  podeEditar?: boolean;
+  editarHref?: string;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -152,14 +158,28 @@ export default function LinhaCamiao({
   const horaBase = horaMaputo(d.carregado_em) ?? d.hora_saida_porto;
 
   // Atraso até à balança (calculado no Laravel: nivelAtraso). Carregado ainda não tem atraso.
-  const { nivel_atraso: nivel, atraso_minutos: minAtraso, atraso_motivo: motivoAtraso } = d as Camiao & {
+  const {
+    nivel_atraso: nivel,
+    atraso_minutos: minAtraso,
+    atraso_motivo: motivoAtraso,
+    observacoes,
+    editado_por_nome: editadoPor,
+    editado_em: editadoEm,
+  } = d as Camiao & {
     nivel_atraso?: string | null;
     atraso_minutos?: number | null;
     atraso_motivo?: string | null;
+    observacoes?: string | null;
+    editado_por_nome?: string | null;
+    editado_em?: string | null;
   };
   const corAtraso = nivel ? COR_ATRASO[nivel] : undefined;
   const textoAtraso = corAtraso
     ? `${corAtraso.rotulo}${minAtraso ? ` (${minAtraso} min)` : ''}${motivoAtraso ? `: ${motivoAtraso}` : ''}`
+    : '';
+  const obs = observacoes?.trim() || '';
+  const editadoQuando = editadoEm
+    ? new Date(editadoEm).toLocaleString('pt-PT', { timeZone: 'Africa/Maputo', dateStyle: 'short', timeStyle: 'short' })
     : '';
 
   return (
@@ -224,6 +244,17 @@ export default function LinhaCamiao({
           {motivoAtraso && (
             <p className="mt-0.5 text-xs font-semibold text-red-700">Atraso: {motivoAtraso}</p>
           )}
+          {obs && (
+            <p className="mt-0.5 truncate text-xs text-slate-600" title={obs}>
+              <span className="font-semibold text-slate-700">Obs.:</span> {obs}
+            </p>
+          )}
+          {editadoPor && (
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              Editado por <span className="font-semibold text-slate-700">{editadoPor}</span>
+              {editadoQuando ? ` · ${editadoQuando}` : ''}
+            </p>
+          )}
           {carregado && (
             <p className="mt-0.5 text-xs font-semibold text-emerald-700">Deslize para a direita: saiu do porto →</p>
           )}
@@ -252,10 +283,35 @@ export default function LinhaCamiao({
           <div className="text-xs font-medium text-slate-500">estimado</div>
         </div>
 
+        {/* Editar: só gestor */}
+        {podeEditar && editarHref && (
+          <Link
+            href={editarHref}
+            scroll={false}
+            aria-label={`Editar camião ${d.matricula}`}
+            title="Editar registo"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </Link>
+        )}
+
         <DetalheCamiao
           camiao={d}
           href={`/operacoes/${operacaoId}/camioes/${d.id}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 active:bg-slate-100"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
         />
       </div>
 

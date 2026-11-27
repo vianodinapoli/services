@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { laravel } from '@/lib/laravel';
+import { souGestor } from '@/lib/gestor';
 import PageHeader from '@/components/PageHeader';
 import FlashToast from '@/components/FlashToast';
 import AtualizarAuto from '@/components/AtualizarAuto';
@@ -19,7 +20,7 @@ type SP = Record<string, string | undefined>;
 // rd e rf (relatório) ficam de fora de propósito: não devem ir para a lista.
 const CHAVES = ['q', 'st', 'tr', 'at', 'de', 'ate', 'pp'];
 
-/* ---------- Sistema de estilos (apenas slate + accent; verde/âmbar só para estado) ---------- */
+/* ---------- Sistema de estilos (paleta FEM: slate + accent; verde/âmbar só para estado) ---------- */
 
 const focoVisivel =
   'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100 focus-visible:border-accent';
@@ -39,7 +40,7 @@ const botaoPagina =
   `flex h-12 items-center rounded-xl border border-slate-200 bg-white px-5 text-base font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] md:h-14 md:px-7 ${focoVisivel}`;
 
 const botaoPaginaOff =
-  'flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-5 text-base text-slate-300 md:h-14 md:px-7';
+  'flex h-12 items-center rounded-xl border border-slate-200 bg-slate-100 px-5 text-base text-slate-300 md:h-14 md:px-7';
 
 const semBarra = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
@@ -159,7 +160,7 @@ export default async function OperacaoPage({
     ? 'A hora final tem de ser igual ou posterior à hora inicial.'
     : null;
 
-  const [op, lista, relatorio] = await Promise.all([
+  const [op, lista, relatorio, podeEditar] = await Promise.all([
     laravel<Operation>(`/operations/${id}`),
     laravel<DischargeList>(`/operations/${id}/discharges?${api.toString()}`),
     relatorioPedido && !intervaloInvalido
@@ -170,6 +171,7 @@ export default async function OperacaoPage({
           return null;
         })
       : Promise.resolve(null),
+    souGestor(),
   ]);
 
   const base = `/operacoes/${id}`;
@@ -517,6 +519,8 @@ export default async function OperacaoPage({
                 key={d.id}
                 camiao={d}
                 operacaoId={op.id}
+                podeEditar={true}
+                editarHref={`${base}/camioes/${d.id}/editar`}
                 icone={<IconeCamiao tipo={d.tipo_atrelado} tamanho={26} />}
               />
             ))}
