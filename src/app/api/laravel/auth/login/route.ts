@@ -7,6 +7,8 @@ const offline = () =>
     { status: 503 },
   );
 
+const TIMEOUT_MS = Number(process.env.LARAVEL_TIMEOUT_MS ?? 10000);
+
 export async function POST(req: Request) {
   let body: Record<string, unknown>;
   try {
@@ -16,32 +18,51 @@ export async function POST(req: Request) {
   }
 
   const base = process.env.LARAVEL_API_URL;
-  if (!base) return offline();
+  if (!base) {
+    console.error('[login] LARAVEL_API_URL não definida no .env.local');
+    return offline();
+  }
+
+  const url = `${base}/login`;
 
   let res: Response;
   try {
-    res = await fetch(`${base}/login`, {
+    res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ ...body, device_name: 'tablet-porto' }),
       cache: 'no-store',
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch {
+  } catch (err) {
+    console.error(`[login] falha de rede/timeout (${TIMEOUT_MS}ms) em ${url}:`, err);
     return offline();
   }
 
   // Funnel/Tailscale responde 502/503/504 quando o Laravel está em baixo
-  if ([502, 503, 504].includes(res.status)) return offline();
-
-  let data: any;
-  try {
-    data = await res.json();
-  } catch {
-    return offline(); // resposta não é JSON (ex.: página HTML de erro)
+  if ([502, 503, 504].includes(res.status)) {
+    console.error(`[login] gateway ${res.status} em ${url}`);
+    return offline();
   }
 
-  if (!res.ok) return NextResponse.json(data, { status: res.status });
+  const raw = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    console.error(`[login] resposta não-JSON de ${url} (HTTP ${res.status}):`, raw.slice(0, 500) || '(corpo vazio)');
+    return offline();
+  }
+
+  if (!res.ok) {
+    if (res.status >= 500) console.error(`[login] erro ${res.status} do Laravel:`, data);
+    return NextResponse.json(data, { status: res.status });
+  }
+
+  if (!data.token) {
+    console.error('[login] resposta OK mas sem token:', data);
+    return offline();
+  }
 
   const jar = await cookies();
   const opts = {
